@@ -6,6 +6,8 @@ import lombok.Setter;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.UUID;
 
 @Getter
@@ -23,6 +25,9 @@ public class Usuario {
     private BigDecimal faixaSalario;
     private LocalDateTime dataCriacao;
     private LocalDateTime dataAtualizacao;
+
+    @OneToMany(mappedBy = "usuario", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<Meta> Metas = new ArrayList<>();
 
     public Usuario(UUID id, String nome, String email, String senha, BigDecimal faixaSalario, LocalDateTime dataCriacao, LocalDateTime dataAtualizacao) {
         this.id = id;

@@ -25,10 +25,14 @@ public class Meta {
     private BigDecimal valorAtual;
     private LocalDate dataAlvo;
     private LocalDateTime dataCriacao;
-    private UUID userId;
 
     @OneToMany(mappedBy = "meta", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<AporteMeta> aporteMetas = new ArrayList<>();
+
+    @ManyToOne
+    @JoinColumn(name = "usuario_id", nullable = false)
+    private Usuario usuario;
+
 
     public Meta() {
         this.id = UUID.randomUUID();
@@ -37,11 +41,11 @@ public class Meta {
         this.aporteMetas = new ArrayList<>();
     }
 
-    public Meta(String nome, BigDecimal valorAlvo, LocalDate dataAlvo, UUID userId) {
+    public Meta(String nome, BigDecimal valorAlvo, LocalDate dataAlvo, Usuario usuario) {
         this();
         this.nome = nome;
         this.valorAlvo = valorAlvo;
         this.dataAlvo = dataAlvo;
-        this.userId = userId;
+        this.usuario = usuario;
     }
 }
