@@ -7,6 +7,8 @@ import lombok.Setter;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.UUID;
 
 @Getter
@@ -16,7 +18,7 @@ import java.util.UUID;
 public class Meta {
 
     @Id
-    @GeneratedValue
+    @GeneratedValue(strategy = GenerationType.UUID)
     private UUID id;
     private String nome;
     private BigDecimal valorAlvo;
@@ -25,13 +27,21 @@ public class Meta {
     private LocalDateTime dataCriacao;
     private UUID userId;
 
-    public Meta(UUID id, String nome, BigDecimal valorAlvo, BigDecimal valorAtual, LocalDate dataAlvo, LocalDateTime dataCriacao, UUID userId) {
-        this.id = id;
+    @OneToMany(mappedBy = "meta", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<AporteMeta> aporteMetas = new ArrayList<>();
+
+    public Meta() {
+        this.id = UUID.randomUUID();
+        this.valorAtual = BigDecimal.ZERO;
+        this.dataCriacao = LocalDateTime.now();
+        this.aporteMetas = new ArrayList<>();
+    }
+
+    public Meta(String nome, BigDecimal valorAlvo, LocalDate dataAlvo, UUID userId) {
+        this();
         this.nome = nome;
         this.valorAlvo = valorAlvo;
-        this.valorAtual = valorAtual;
         this.dataAlvo = dataAlvo;
-        this.dataCriacao = dataCriacao;
         this.userId = userId;
     }
 }

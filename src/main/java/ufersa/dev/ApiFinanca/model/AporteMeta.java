@@ -1,9 +1,6 @@
 package ufersa.dev.ApiFinanca.model;
 
-import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.Id;
-import jakarta.persistence.Table;
+import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -18,16 +15,23 @@ import java.util.UUID;
 public class AporteMeta {
 
     @Id
-    @GeneratedValue
+    @GeneratedValue(strategy = GenerationType.UUID)
     private UUID id;
     private BigDecimal valor;
     private LocalDate data;
-    private UUID metaId;
 
-    public AporteMeta(UUID id, BigDecimal valor, LocalDate data, UUID metaId) {
+    @ManyToOne
+    @JoinColumn(name = "meta_id", nullable = false)
+    private Meta meta;
+
+    public AporteMeta(UUID id, BigDecimal valor, LocalDate data) {
         this.id = id;
         this.valor = valor;
         this.data = data;
-        this.metaId = metaId;
     }
+
+    public AporteMeta() {
+        this.id = UUID.randomUUID();
+    }
+
 }
