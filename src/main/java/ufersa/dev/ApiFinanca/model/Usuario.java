@@ -5,6 +5,8 @@ import lombok.Getter;
 import lombok.Setter;
 
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
+import java.util.UUID;
 
 @Getter
 @Setter
@@ -13,19 +15,23 @@ import java.math.BigDecimal;
 public class Usuario {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+    @GeneratedValue
+    private UUID id;
     private String nome;
     private String email;
     private String senha;
     private BigDecimal faixaSalario;
+    private LocalDateTime dataCriacao;
+    private LocalDateTime dataAtualizacao;
 
-    public Usuario(Long id, String nome, String email, String senha, BigDecimal faixaSalario) {
+    public Usuario(UUID id, String nome, String email, String senha, BigDecimal faixaSalario, LocalDateTime dataCriacao, LocalDateTime dataAtualizacao) {
         this.id = id;
         this.nome = nome;
         this.email = email;
         this.senha = senha;
         this.faixaSalario = faixaSalario;
+        this.dataCriacao = dataCriacao;
+        this.dataAtualizacao = dataAtualizacao;
     }
 
 }
