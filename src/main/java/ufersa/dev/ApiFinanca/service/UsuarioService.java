@@ -7,6 +7,7 @@ import ufersa.dev.ApiFinanca.repository.UsuarioRepository;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.UUID;
 
 @Service
 public class UsuarioService {
@@ -44,4 +45,39 @@ public class UsuarioService {
         return usuarioRepository.save(usuario);
     }
 
+    // buscar por id
+    public Usuario getById(UUID id) {
+        return usuarioRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Usuario não encontrado"));
+    }
+
+    // atualizar
+    public Usuario update(UUID id, UsuarioRequest request) {
+        Usuario usuario = getById(id);
+
+        if (request.getNome() != null && !request.getNome().isBlank()) {
+            usuario.setNome(request.getNome());
+        }
+        if (request.getEmail() != null && !request.getEmail().isBlank()) {
+            usuario.setEmail(request.getEmail());
+        }
+        if (request.getSenha() != null && !request.getSenha().isBlank()) {
+            usuario.setSenha(request.getSenha());
+        }
+        if (request.getFaixaSalario() != null) {
+            usuario.setFaixaSalario(request.getFaixaSalario());
+        }
+
+        usuario.setDataAtualizacao(LocalDateTime.now());
+        return usuarioRepository.save(usuario);
+    }
+
+    // Deletar
+
+    public void delete(UUID id) {
+        if (usuarioRepository.existsById(id)) {
+            throw new RuntimeException("Usuário não encontrado");
+        }
+        usuarioRepository.deleteById(id);
+    }
 }
