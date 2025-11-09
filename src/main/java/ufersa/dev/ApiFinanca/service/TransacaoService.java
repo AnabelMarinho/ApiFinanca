@@ -1,0 +1,136 @@
+package ufersa.dev.ApiFinanca.service;
+
+import jakarta.persistence.EntityNotFoundException;
+import org.springframework.stereotype.Service;
+import ufersa.dev.ApiFinanca.dto.TransacaoRequest;
+import ufersa.dev.ApiFinanca.model.Categoria;
+import ufersa.dev.ApiFinanca.model.TipoTransacao;
+import ufersa.dev.ApiFinanca.model.Transacao;
+import ufersa.dev.ApiFinanca.model.Usuario;
+import ufersa.dev.ApiFinanca.repository.CategoriaRepository;
+import ufersa.dev.ApiFinanca.repository.TransacaoRepository;
+import ufersa.dev.ApiFinanca.repository.UsuarioRepository;
+
+import java.math.BigDecimal;
+import java.time.LocalDate;
+import java.util.List;
+import java.util.Optional;
+import java.util.UUID;
+
+@Service
+public class TransacaoService {
+
+    private final TransacaoRepository transacaoRepository;
+    private final UsuarioRepository usuarioRepository;
+    private final CategoriaRepository categoriaRepository;
+
+    public TransacaoService(TransacaoRepository transacaoRepository,
+                            UsuarioRepository usuarioRepository,
+                            CategoriaRepository categoriaRepository) {
+        this.transacaoRepository = transacaoRepository;
+        this.usuarioRepository = usuarioRepository;
+        this.categoriaRepository = categoriaRepository;
+    }
+
+    public List<Transacao> getAll() {
+        return transacaoRepository.findAll();
+    }
+
+    public Optional<Transacao> getById(Long id) {
+        return transacaoRepository.findById(id);
+    }
+
+    public Transacao save(TransacaoRequest request) {
+        Transacao transacao = new Transacao();
+        applyRequestToEntity(request, transacao);
+        return transacaoRepository.save(transacao);
+    }
+
+    public Transacao update(Long id, TransacaoRequest request) {
+        Transacao transacao = transacaoRepository.findById(id)
+                .orElseThrow(() -> new EntityNotFoundException("Transação não encontrada para o id " + id));
+        applyRequestToEntity(request, transacao);
+        return transacaoRepository.save(transacao);
+    }
+
+    public void delete(Long id) {
+        if (!transacaoRepository.existsById(id)) {
+            throw new EntityNotFoundException("Transação não encontrada para o id " + id);
+        }
+        transacaoRepository.deleteById(id);
+    }
+
+    public List<Transacao> getByUser(Usuario usuario) {
+        return transacaoRepository.findByUser(usuario);
+    }
+
+    public List<Transacao> getByUserOrderByDataDesc(Usuario usuario) {
+        return transacaoRepository.findByUserOrderByDataDesc(usuario);
+    }
+
+    public List<Transacao> getByUserAndTipo(Usuario usuario, TipoTransacao tipo) {
+        return transacaoRepository.findByUserAndTipo(usuario, tipo);
+    }
+
+    public List<Transacao> getByUserAndCategoria(Usuario usuario, Categoria categoria) {
+        return transacaoRepository.findByUserAndCategoria(usuario, categoria);
+    }
+
+    public List<Transacao> getByUserAndPeriodo(Usuario usuario, LocalDate dataInicio, LocalDate dataFim) {
+        return transacaoRepository.findByUserAndDataBetween(usuario, dataInicio, dataFim);
+    }
+
+    public List<Transacao> getByUserTipoEPeriodo(Usuario usuario, TipoTransacao tipo, LocalDate dataInicio, LocalDate dataFim) {
+        return transacaoRepository.findByUserAndTipoAndDataBetween(usuario, tipo, dataInicio, dataFim);
+    }
+
+    public List<Transacao> getByUserCategoriaEPeriodo(Usuario usuario, Categoria categoria, LocalDate dataInicio, LocalDate dataFim) {
+        return transacaoRepository.findByUserAndCategoriaAndDataBetween(usuario, categoria, dataInicio, dataFim);
+    }
+
+    public BigDecimal calcularTotalPorTipoEPeriodo(Usuario usuario, TipoTransacao tipo, LocalDate dataInicio, LocalDate dataFim) {
+        return transacaoRepository.calcularTotalPorTipoEPeriodo(usuario, tipo, dataInicio, dataFim);
+    }
+
+    public BigDecimal calcularTotalPorCategoriaEPeriodo(Usuario usuario, Categoria categoria, LocalDate dataInicio, LocalDate dataFim) {
+        return transacaoRepository.calcularTotalPorCategoriaEPeriodo(usuario, categoria, dataInicio, dataFim);
+    }
+
+    public List<Transacao> getTop10ByUser(Usuario usuario) {
+        return transacaoRepository.findTop10ByUserOrderByDataDesc(usuario);
+    }
+
+    private void applyRequestToEntity(TransacaoRequest request, Transacao transacao) {
+        if (request.getTipo() == null) {
+            throw new IllegalArgumentException("tipo é obrigatório");
+        }
+        if (request.getValor() == null) {
+            throw new IllegalArgumentException("valor é obrigatório");
+        }
+        if (request.getData() == null) {
+            throw new IllegalArgumentException("data é obrigatória");
+        }
+
+        transacao.setTipo(request.getTipo());
+        transacao.setValor(request.getValor());
+        transacao.setData(request.getData());
+        transacao.setDescricao(request.getDescricao());
+
+        UUID userId = request.getUserId();
+        if (userId == null) {
+            throw new IllegalArgumentException("userId é obrigatório");
+        }
+        Usuario usuario = usuarioRepository.findById(userId)
+                .orElseThrow(() -> new EntityNotFoundException("Usuário não encontrado para o id " + userId));
+        transacao.setUser(usuario);
+
+        Long categoriaId = request.getCategoriaId();
+        if (categoriaId == null) {
+            throw new IllegalArgumentException("categoriaId é obrigatório");
+        }
+        Categoria categoria = categoriaRepository.findById(categoriaId)
+                .orElseThrow(() -> new EntityNotFoundException("Categoria não encontrada para o id " + categoriaId));
+        transacao.setCategoria(categoria);
+    }
+}
+
