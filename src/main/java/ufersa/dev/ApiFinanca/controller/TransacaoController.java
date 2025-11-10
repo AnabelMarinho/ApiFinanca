@@ -9,6 +9,7 @@ import ufersa.dev.ApiFinanca.model.Transacao;
 import ufersa.dev.ApiFinanca.service.TransacaoService;
 
 import java.util.List;
+import java.util.UUID;
 
 @RestController
 @RequestMapping("/transacao")
@@ -26,7 +27,7 @@ public class TransacaoController {
     }
 
     @GetMapping("/{id}")
-    public Transacao getById(@PathVariable Long id) {
+    public Transacao getById(@PathVariable UUID id) {
         return transacaoService.getById(id)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Transação não encontrada"));
     }
@@ -42,7 +43,7 @@ public class TransacaoController {
     }
 
     @PutMapping("/{id}")
-    public Transacao update(@PathVariable Long id, @RequestBody TransacaoRequest request) {
+    public Transacao update(@PathVariable UUID id, @RequestBody TransacaoRequest request) {
         try {
             return transacaoService.update(id, request);
         } catch (IllegalArgumentException ex) {
@@ -54,7 +55,7 @@ public class TransacaoController {
 
     @DeleteMapping("/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    public void delete(@PathVariable Long id) {
+    public void delete(@PathVariable UUID id) {
         try {
             transacaoService.delete(id);
         } catch (EntityNotFoundException ex) {

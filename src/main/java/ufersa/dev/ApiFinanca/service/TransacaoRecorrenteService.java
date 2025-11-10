@@ -13,6 +13,7 @@ import ufersa.dev.ApiFinanca.repository.UsuarioRepository;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 
 @Service
 public class TransacaoRecorrenteService {
@@ -33,7 +34,7 @@ public class TransacaoRecorrenteService {
         return transacaoRecorrenteRepository.findAll();
     }
 
-    public Optional<TransacaoRecorrente> getById(Long id) {
+    public Optional<TransacaoRecorrente> getById(UUID id) {
         return transacaoRecorrenteRepository.findById(id);
     }
 
@@ -43,14 +44,14 @@ public class TransacaoRecorrenteService {
         return transacaoRecorrenteRepository.save(transacaoRecorrente);
     }
 
-    public TransacaoRecorrente update(Long id, TransacaoRecorrenteRequest request) {
+    public TransacaoRecorrente update(UUID id, TransacaoRecorrenteRequest request) {
         TransacaoRecorrente transacaoRecorrente = transacaoRecorrenteRepository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("Transação recorrente não encontrada para o id " + id));
         applyRequestToEntity(request, transacaoRecorrente);
         return transacaoRecorrenteRepository.save(transacaoRecorrente);
     }
 
-    public void delete(Long id) {
+    public void delete(UUID id) {
         if (!transacaoRecorrenteRepository.existsById(id)) {
             throw new EntityNotFoundException("Transação recorrente não encontrada para o id " + id);
         }
@@ -119,7 +120,7 @@ public class TransacaoRecorrenteService {
             entity.setAtiva(request.getAtiva());
         }
 
-        Long userId = request.getUserId();
+        UUID userId = request.getUserId();
         if (userId == null) {
             throw new IllegalArgumentException("userId é obrigatório");
         }
@@ -127,7 +128,7 @@ public class TransacaoRecorrenteService {
                 .orElseThrow(() -> new EntityNotFoundException("Usuário não encontrado para o id " + userId));
         entity.setUser(usuario);
 
-        Long categoriaId = request.getCategoriaId();
+        UUID categoriaId = request.getCategoriaId();
         if (categoriaId == null) {
             throw new IllegalArgumentException("categoriaId é obrigatório");
         }

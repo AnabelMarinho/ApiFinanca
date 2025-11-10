@@ -9,6 +9,7 @@ import ufersa.dev.ApiFinanca.model.Categoria;
 import ufersa.dev.ApiFinanca.service.CategoriaService;
 
 import java.util.List;
+import java.util.UUID;
 
 @RestController
 @RequestMapping("/categoria")
@@ -26,7 +27,7 @@ public class CategoriaController {
     }
 
     @GetMapping("/{id}")
-    public Categoria getById(@PathVariable Long id) {
+    public Categoria getById(@PathVariable UUID id) {
         return categoriaService.getById(id)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Categoria não encontrada"));
     }
@@ -42,7 +43,7 @@ public class CategoriaController {
     }
 
     @PutMapping("/{id}")
-    public Categoria update(@PathVariable Long id, @RequestBody CategoriaRequest request) {
+    public Categoria update(@PathVariable UUID id, @RequestBody CategoriaRequest request) {
         try {
             return categoriaService.update(id, request);
         } catch (IllegalArgumentException ex) {
@@ -54,7 +55,7 @@ public class CategoriaController {
 
     @DeleteMapping("/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    public void delete(@PathVariable Long id) {
+    public void delete(@PathVariable UUID id) {
         try {
             categoriaService.delete(id);
         } catch (EntityNotFoundException ex) {

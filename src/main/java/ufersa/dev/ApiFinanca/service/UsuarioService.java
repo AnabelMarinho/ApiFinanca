@@ -7,6 +7,7 @@ import ufersa.dev.ApiFinanca.repository.UsuarioRepository;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.UUID;
 
 @Service
 public class UsuarioService {
@@ -45,13 +46,13 @@ public class UsuarioService {
     }
 
     // buscar por id
-    public Usuario getById(Long id) {
+    public Usuario getById(UUID id) {
         return usuarioRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Usuario não encontrado"));
     }
 
     // atualizar
-    public Usuario update(Long id, UsuarioRequest request) {
+    public Usuario update(UUID id, UsuarioRequest request) {
         Usuario usuario = getById(id);
 
         if (request.getNome() != null && !request.getNome().isBlank()) {
@@ -73,8 +74,8 @@ public class UsuarioService {
 
     // Deletar
 
-    public void delete(Long id) {
-        if (usuarioRepository.existsById(id)) {
+    public void delete(UUID id) {
+        if (!usuarioRepository.existsById(id)) {
             throw new RuntimeException("Usuário não encontrado");
         }
         usuarioRepository.deleteById(id);

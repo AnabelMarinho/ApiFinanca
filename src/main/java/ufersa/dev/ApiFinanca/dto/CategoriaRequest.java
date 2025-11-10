@@ -2,12 +2,13 @@ package ufersa.dev.ApiFinanca.dto;
 
 import ufersa.dev.ApiFinanca.model.TipoTransacao;
 
+import java.util.UUID;
 
 public class CategoriaRequest {
 
     private String nome;
     private TipoTransacao tipo;
-    private Long userId;
+    private UUID userId;
 
     public String getNome() {
         return nome;
@@ -25,11 +26,11 @@ public class CategoriaRequest {
         this.tipo = tipo;
     }
 
-    public Long getUserId() {
+    public UUID getUserId() {
         return userId;
     }
 
-    public void setUserId(Long userId) {
+    public void setUserId(UUID userId) {
         this.userId = userId;
     }
 }

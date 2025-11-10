@@ -9,6 +9,7 @@ import ufersa.dev.ApiFinanca.model.Usuario;
 import ufersa.dev.ApiFinanca.service.UsuarioService;
 
 import java.util.List;
+import java.util.UUID;
 
 @RestController
 @RequestMapping ("/usuario")
@@ -36,7 +37,7 @@ public class UsuarioController {
 
     // buscar por id
     @GetMapping("/{id}")
-    public ResponseEntity<Usuario> getById(@PathVariable Long id) {
+    public ResponseEntity<Usuario> getById(@PathVariable UUID id) {
         try {
             Usuario usuario = usuarioService.getById(id);
             return ResponseEntity.ok(usuario);
@@ -47,7 +48,7 @@ public class UsuarioController {
 
     // atualizar usuário que já existe
     @PutMapping("/{id}")
-    public ResponseEntity<Usuario> update(@PathVariable Long id, @RequestBody UsuarioRequest request) {
+    public ResponseEntity<Usuario> update(@PathVariable UUID id, @RequestBody UsuarioRequest request) {
         try {
             Usuario atualizado = usuarioService.update(id, request);
             return ResponseEntity.ok(atualizado);
@@ -58,7 +59,7 @@ public class UsuarioController {
 
     // deletar usuário
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> delete(@PathVariable Long id) {
+    public ResponseEntity<Void> delete(@PathVariable UUID id) {
         try {
             usuarioService.delete(id);
             return ResponseEntity.noContent().build();

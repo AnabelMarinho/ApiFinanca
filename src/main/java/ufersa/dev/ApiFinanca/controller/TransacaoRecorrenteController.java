@@ -9,6 +9,7 @@ import ufersa.dev.ApiFinanca.model.TransacaoRecorrente;
 import ufersa.dev.ApiFinanca.service.TransacaoRecorrenteService;
 
 import java.util.List;
+import java.util.UUID;
 
 @RestController
 @RequestMapping("/transacao-recorrente")
@@ -26,7 +27,7 @@ public class TransacaoRecorrenteController {
     }
 
     @GetMapping("/{id}")
-    public TransacaoRecorrente getById(@PathVariable Long id) {
+    public TransacaoRecorrente getById(@PathVariable UUID id) {
         return transacaoRecorrenteService.getById(id)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Transação recorrente não encontrada"));
     }
@@ -42,7 +43,7 @@ public class TransacaoRecorrenteController {
     }
 
     @PutMapping("/{id}")
-    public TransacaoRecorrente update(@PathVariable Long id, @RequestBody TransacaoRecorrenteRequest request) {
+    public TransacaoRecorrente update(@PathVariable UUID id, @RequestBody TransacaoRecorrenteRequest request) {
         try {
             return transacaoRecorrenteService.update(id, request);
         } catch (IllegalArgumentException ex) {
@@ -54,7 +55,7 @@ public class TransacaoRecorrenteController {
 
     @DeleteMapping("/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    public void delete(@PathVariable Long id) {
+    public void delete(@PathVariable UUID id) {
         try {
             transacaoRecorrenteService.delete(id);
         } catch (EntityNotFoundException ex) {

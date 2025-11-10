@@ -15,6 +15,7 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 
 @Service
 public class TransacaoService {
@@ -35,7 +36,7 @@ public class TransacaoService {
         return transacaoRepository.findAll();
     }
 
-    public Optional<Transacao> getById(Long id) {
+    public Optional<Transacao> getById(UUID id) {
         return transacaoRepository.findById(id);
     }
 
@@ -45,14 +46,14 @@ public class TransacaoService {
         return transacaoRepository.save(transacao);
     }
 
-    public Transacao update(Long id, TransacaoRequest request) {
+    public Transacao update(UUID id, TransacaoRequest request) {
         Transacao transacao = transacaoRepository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("Transação não encontrada para o id " + id));
         applyRequestToEntity(request, transacao);
         return transacaoRepository.save(transacao);
     }
 
-    public void delete(Long id) {
+    public void delete(UUID id) {
         if (!transacaoRepository.existsById(id)) {
             throw new EntityNotFoundException("Transação não encontrada para o id " + id);
         }
@@ -115,7 +116,7 @@ public class TransacaoService {
         transacao.setData(request.getData());
         transacao.setDescricao(request.getDescricao());
 
-        Long userId = request.getUserId();
+        UUID userId = request.getUserId();
         if (userId == null) {
             throw new IllegalArgumentException("userId é obrigatório");
         }
@@ -123,7 +124,7 @@ public class TransacaoService {
                 .orElseThrow(() -> new EntityNotFoundException("Usuário não encontrado para o id " + userId));
         transacao.setUser(usuario);
 
-        Long categoriaId = request.getCategoriaId();
+        UUID categoriaId = request.getCategoriaId();
         if (categoriaId == null) {
             throw new IllegalArgumentException("categoriaId é obrigatório");
         }

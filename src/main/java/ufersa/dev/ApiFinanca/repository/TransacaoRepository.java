@@ -12,9 +12,10 @@ import ufersa.dev.ApiFinanca.model.Usuario;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
+import java.util.UUID;
 
 @Repository
-public interface TransacaoRepository extends JpaRepository<Transacao, Long> {
+public interface TransacaoRepository extends JpaRepository<Transacao, UUID> {
 
     // Buscar transações por usuário
     List<Transacao> findByUser(Usuario user);
