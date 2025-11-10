@@ -8,7 +8,6 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.UUID;
 
 @Getter
 @Setter
@@ -17,8 +16,9 @@ import java.util.UUID;
 public class Usuario {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.UUID)
-    private UUID id;
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
     private String nome;
     private String email;
     private String senha;
@@ -27,14 +27,14 @@ public class Usuario {
     private LocalDateTime dataAtualizacao;
 
     @OneToMany(mappedBy = "usuario", cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<Meta> Metas = new ArrayList<>();
+    private List<Meta> metas = new ArrayList<>();
 
     public Usuario() {
         this.dataCriacao = LocalDateTime.now();
         this.dataAtualizacao = LocalDateTime.now();
     }
 
-    public Usuario(UUID id, String nome, String email, String senha, BigDecimal faixaSalario, LocalDateTime dataCriacao, LocalDateTime dataAtualizacao) {
+    public Usuario(Long id, String nome, String email, String senha, BigDecimal faixaSalario, LocalDateTime dataCriacao, LocalDateTime dataAtualizacao) {
         this.id = id;
         this.nome = nome;
         this.email = email;
@@ -43,6 +43,4 @@ public class Usuario {
         this.dataCriacao = dataCriacao;
         this.dataAtualizacao = dataAtualizacao;
     }
-
 }
-

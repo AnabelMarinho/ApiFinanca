@@ -15,8 +15,9 @@ import java.util.UUID;
 public class AporteMeta {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.UUID)
-    private UUID id;
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
     private BigDecimal valor;
     private LocalDate data;
 
@@ -24,14 +25,13 @@ public class AporteMeta {
     @JoinColumn(name = "meta_id", nullable = false)
     private Meta meta;
 
-    public AporteMeta(UUID id, BigDecimal valor, LocalDate data) {
-        this.id = id;
+    public AporteMeta(BigDecimal valor, Long id, LocalDate data, Meta meta) {
         this.valor = valor;
+        this.id = id;
         this.data = data;
+        this.meta = meta;
     }
-
     public AporteMeta() {
-        this.id = UUID.randomUUID();
     }
 
 }

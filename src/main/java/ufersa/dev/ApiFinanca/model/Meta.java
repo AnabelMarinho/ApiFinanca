@@ -18,8 +18,9 @@ import java.util.UUID;
 public class Meta {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.UUID)
-    private UUID id;
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
     private String nome;
     private BigDecimal valorAlvo;
     private BigDecimal valorAtual;
@@ -35,7 +36,6 @@ public class Meta {
 
 
     public Meta() {
-        this.id = UUID.randomUUID();
         this.valorAtual = BigDecimal.ZERO;
         this.dataCriacao = LocalDateTime.now();
         this.aporteMetas = new ArrayList<>();
@@ -48,4 +48,5 @@ public class Meta {
         this.dataAlvo = dataAlvo;
         this.usuario = usuario;
     }
+
 }
