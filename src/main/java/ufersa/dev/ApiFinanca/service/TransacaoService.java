@@ -15,7 +15,6 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
-import java.util.UUID;
 
 @Service
 public class TransacaoService {
@@ -116,7 +115,7 @@ public class TransacaoService {
         transacao.setData(request.getData());
         transacao.setDescricao(request.getDescricao());
 
-        UUID userId = request.getUserId();
+        Long userId = request.getUserId();
         if (userId == null) {
             throw new IllegalArgumentException("userId é obrigatório");
         }

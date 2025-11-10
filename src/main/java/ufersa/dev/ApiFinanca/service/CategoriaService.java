@@ -11,7 +11,6 @@ import ufersa.dev.ApiFinanca.repository.UsuarioRepository;
 
 import java.util.List;
 import java.util.Optional;
-import java.util.UUID;
 
 @Service
 public class CategoriaService {
@@ -87,7 +86,7 @@ public class CategoriaService {
         categoria.setNome(request.getNome());
         categoria.setTipo(request.getTipo());
 
-        UUID userId = request.getUserId();
+        Long userId = request.getUserId();
         if (userId == null) {
             categoria.setUser(null);
             return;

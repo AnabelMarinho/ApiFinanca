@@ -13,7 +13,6 @@ import ufersa.dev.ApiFinanca.repository.UsuarioRepository;
 
 import java.util.List;
 import java.util.Optional;
-import java.util.UUID;
 
 @Service
 public class TransacaoRecorrenteService {
@@ -120,7 +119,7 @@ public class TransacaoRecorrenteService {
             entity.setAtiva(request.getAtiva());
         }
 
-        UUID userId = request.getUserId();
+        Long userId = request.getUserId();
         if (userId == null) {
             throw new IllegalArgumentException("userId é obrigatório");
         }

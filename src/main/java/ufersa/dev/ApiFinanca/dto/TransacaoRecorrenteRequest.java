@@ -3,7 +3,6 @@ package ufersa.dev.ApiFinanca.dto;
 import ufersa.dev.ApiFinanca.model.TipoTransacao;
 
 import java.math.BigDecimal;
-import java.util.UUID;
 
 public class TransacaoRecorrenteRequest {
 
@@ -12,7 +11,7 @@ public class TransacaoRecorrenteRequest {
     private String descricao;
     private Integer diaRecorrencia;
     private Boolean ativa;
-    private UUID userId;
+    private Long userId;
     private Long categoriaId;
 
     public TipoTransacao getTipo() {
@@ -55,11 +54,11 @@ public class TransacaoRecorrenteRequest {
         this.ativa = ativa;
     }
 
-    public UUID getUserId() {
+    public Long getUserId() {
         return userId;
     }
 
-    public void setUserId(UUID userId) {
+    public void setUserId(Long userId) {
         this.userId = userId;
     }
 

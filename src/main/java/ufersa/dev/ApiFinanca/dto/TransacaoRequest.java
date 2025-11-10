@@ -4,7 +4,6 @@ import ufersa.dev.ApiFinanca.model.TipoTransacao;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
-import java.util.UUID;
 
 public class TransacaoRequest {
 
@@ -12,7 +11,7 @@ public class TransacaoRequest {
     private BigDecimal valor;
     private LocalDate data;
     private String descricao;
-    private UUID userId;
+    private Long userId;
     private Long categoriaId;
 
     public TipoTransacao getTipo() {
@@ -47,11 +46,11 @@ public class TransacaoRequest {
         this.descricao = descricao;
     }
 
-    public UUID getUserId() {
+    public Long getUserId() {
         return userId;
     }
 
-    public void setUserId(UUID userId) {
+    public void setUserId(Long userId) {
         this.userId = userId;
     }
 
