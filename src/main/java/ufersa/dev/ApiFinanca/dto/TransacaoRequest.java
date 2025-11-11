@@ -13,7 +13,7 @@ public class TransacaoRequest {
     private LocalDate data;
     private String descricao;
     private UUID userId;
-    private Long categoriaId;
+    private UUID categoriaId;
 
     public TipoTransacao getTipo() {
         return tipo;
@@ -55,11 +55,11 @@ public class TransacaoRequest {
         this.userId = userId;
     }
 
-    public Long getCategoriaId() {
+    public UUID getCategoriaId() {
         return categoriaId;
     }
 
-    public void setCategoriaId(Long categoriaId) {
+    public void setCategoriaId(UUID categoriaId) {
         this.categoriaId = categoriaId;
     }
 }

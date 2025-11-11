@@ -4,16 +4,16 @@ import lombok.Getter;
 import lombok.Setter;
 
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
+import java.util.UUID;
 
-@Setter
 @Getter
-public class UsuarioRequest {
-
+@Setter
+public class UsuarioResponse {
+    private UUID id;
     private String nome;
     private String email;
-    private String senha;
     private BigDecimal faixaSalario;
-
+    private LocalDateTime dataCriacao;
+    private LocalDateTime dataAtualizacao;
 }
-
-

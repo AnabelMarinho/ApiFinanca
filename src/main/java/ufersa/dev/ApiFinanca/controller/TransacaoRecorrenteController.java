@@ -1,5 +1,7 @@
 package ufersa.dev.ApiFinanca.controller;
 
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import jakarta.persistence.EntityNotFoundException;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
@@ -9,6 +11,7 @@ import ufersa.dev.ApiFinanca.model.TransacaoRecorrente;
 import ufersa.dev.ApiFinanca.service.TransacaoRecorrenteService;
 
 import java.util.List;
+import java.util.UUID;
 
 @RestController
 @RequestMapping("/transacao-recorrente")
@@ -26,13 +29,14 @@ public class TransacaoRecorrenteController {
     }
 
     @GetMapping("/{id}")
-    public TransacaoRecorrente getById(@PathVariable Long id) {
+    public TransacaoRecorrente getById(@PathVariable UUID id) {
         return transacaoRecorrenteService.getById(id)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Transação recorrente não encontrada"));
     }
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
+    @Operation(security = @SecurityRequirement(name = "bearer-jwt"))
     public TransacaoRecorrente create(@RequestBody TransacaoRecorrenteRequest request) {
         try {
             return transacaoRecorrenteService.save(request);
@@ -42,7 +46,8 @@ public class TransacaoRecorrenteController {
     }
 
     @PutMapping("/{id}")
-    public TransacaoRecorrente update(@PathVariable Long id, @RequestBody TransacaoRecorrenteRequest request) {
+    @Operation(security = @SecurityRequirement(name = "bearer-jwt"))
+    public TransacaoRecorrente update(@PathVariable UUID id, @RequestBody TransacaoRecorrenteRequest request) {
         try {
             return transacaoRecorrenteService.update(id, request);
         } catch (IllegalArgumentException ex) {
@@ -54,7 +59,8 @@ public class TransacaoRecorrenteController {
 
     @DeleteMapping("/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    public void delete(@PathVariable Long id) {
+    @Operation(security = @SecurityRequirement(name = "bearer-jwt"))
+    public void delete(@PathVariable UUID id) {
         try {
             transacaoRecorrenteService.delete(id);
         } catch (EntityNotFoundException ex) {

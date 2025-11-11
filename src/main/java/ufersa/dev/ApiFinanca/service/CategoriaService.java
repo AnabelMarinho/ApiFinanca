@@ -28,7 +28,7 @@ public class CategoriaService {
         return categoriaRepository.findAll();
     }
 
-    public Optional<Categoria> getById(Long id) {
+    public Optional<Categoria> getById(UUID id) {
         return categoriaRepository.findById(id);
     }
 
@@ -38,14 +38,14 @@ public class CategoriaService {
         return categoriaRepository.save(categoria);
     }
 
-    public Categoria update(Long id, CategoriaRequest request) {
+    public Categoria update(UUID id, CategoriaRequest request) {
         Categoria categoria = categoriaRepository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("Categoria não encontrada para o id " + id));
         applyRequestToEntity(request, categoria);
         return categoriaRepository.save(categoria);
     }
 
-    public void delete(Long id) {
+    public void delete(UUID id) {
         if (!categoriaRepository.existsById(id)) {
             throw new EntityNotFoundException("Categoria não encontrada para o id " + id);
         }

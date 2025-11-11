@@ -1,8 +1,10 @@
 package ufersa.dev.ApiFinanca.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
+import org.hibernate.annotations.UuidGenerator;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -14,11 +16,15 @@ import java.util.UUID;
 @Setter
 @Entity
 @Table(name = "usuarios")
+@JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
 public class Usuario {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.UUID)
+    @GeneratedValue
+    @UuidGenerator
+    @Column(nullable = false, updatable = false)
     private UUID id;
+
     private String nome;
     private String email;
     private String senha;
@@ -27,7 +33,7 @@ public class Usuario {
     private LocalDateTime dataAtualizacao;
 
     @OneToMany(mappedBy = "usuario", cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<Meta> Metas = new ArrayList<>();
+    private List<Meta> metas = new ArrayList<>();
 
     public Usuario() {
         this.dataCriacao = LocalDateTime.now();
@@ -43,6 +49,4 @@ public class Usuario {
         this.dataCriacao = dataCriacao;
         this.dataAtualizacao = dataAtualizacao;
     }
-
 }
-

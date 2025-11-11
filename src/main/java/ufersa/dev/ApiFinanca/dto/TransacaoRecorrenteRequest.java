@@ -13,7 +13,7 @@ public class TransacaoRecorrenteRequest {
     private Integer diaRecorrencia;
     private Boolean ativa;
     private UUID userId;
-    private Long categoriaId;
+    private UUID categoriaId;
 
     public TipoTransacao getTipo() {
         return tipo;
@@ -63,11 +63,11 @@ public class TransacaoRecorrenteRequest {
         this.userId = userId;
     }
 
-    public Long getCategoriaId() {
+    public UUID getCategoriaId() {
         return categoriaId;
     }
 
-    public void setCategoriaId(Long categoriaId) {
+    public void setCategoriaId(UUID categoriaId) {
         this.categoriaId = categoriaId;
     }
 }

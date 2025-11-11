@@ -10,9 +10,10 @@ import ufersa.dev.ApiFinanca.model.Usuario;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 
 @Repository
-public interface CategoriaRepository extends JpaRepository<Categoria, Long> {
+public interface CategoriaRepository extends JpaRepository<Categoria, UUID> {
 
     // Buscar categorias padrão do sistema (user_id = null)
     List<Categoria> findByUserIsNull();

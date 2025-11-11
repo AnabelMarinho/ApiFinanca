@@ -3,6 +3,7 @@ package ufersa.dev.ApiFinanca.model;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
+import org.hibernate.annotations.UuidGenerator;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -18,8 +19,11 @@ import java.util.UUID;
 public class Meta {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.UUID)
+    @GeneratedValue
+    @UuidGenerator
+    @Column(nullable = false, updatable = false)
     private UUID id;
+
     private String nome;
     private BigDecimal valorAlvo;
     private BigDecimal valorAtual;
@@ -35,7 +39,6 @@ public class Meta {
 
 
     public Meta() {
-        this.id = UUID.randomUUID();
         this.valorAtual = BigDecimal.ZERO;
         this.dataCriacao = LocalDateTime.now();
         this.aporteMetas = new ArrayList<>();
@@ -48,4 +51,5 @@ public class Meta {
         this.dataAlvo = dataAlvo;
         this.usuario = usuario;
     }
+
 }

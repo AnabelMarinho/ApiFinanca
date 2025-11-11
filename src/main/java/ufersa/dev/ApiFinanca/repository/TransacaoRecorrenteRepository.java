@@ -8,9 +8,10 @@ import ufersa.dev.ApiFinanca.model.TransacaoRecorrente;
 import ufersa.dev.ApiFinanca.model.Usuario;
 
 import java.util.List;
+import java.util.UUID;
 
 @Repository
-public interface TransacaoRecorrenteRepository extends JpaRepository<TransacaoRecorrente, Long> {
+public interface TransacaoRecorrenteRepository extends JpaRepository<TransacaoRecorrente, UUID> {
 
     // Buscar transações recorrentes por usuário
     List<TransacaoRecorrente> findByUser(Usuario user);
