@@ -1,5 +1,7 @@
 package ufersa.dev.ApiFinanca.controller;
 
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import jakarta.persistence.EntityNotFoundException;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
@@ -34,6 +36,7 @@ public class TransacaoRecorrenteController {
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
+    @Operation(security = @SecurityRequirement(name = "bearer-jwt"))
     public TransacaoRecorrente create(@RequestBody TransacaoRecorrenteRequest request) {
         try {
             return transacaoRecorrenteService.save(request);
@@ -43,6 +46,7 @@ public class TransacaoRecorrenteController {
     }
 
     @PutMapping("/{id}")
+    @Operation(security = @SecurityRequirement(name = "bearer-jwt"))
     public TransacaoRecorrente update(@PathVariable UUID id, @RequestBody TransacaoRecorrenteRequest request) {
         try {
             return transacaoRecorrenteService.update(id, request);
@@ -55,6 +59,7 @@ public class TransacaoRecorrenteController {
 
     @DeleteMapping("/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
+    @Operation(security = @SecurityRequirement(name = "bearer-jwt"))
     public void delete(@PathVariable UUID id) {
         try {
             transacaoRecorrenteService.delete(id);

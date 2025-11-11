@@ -1,5 +1,7 @@
 package ufersa.dev.ApiFinanca.controller;
 
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -27,6 +29,7 @@ public class UsuarioController {
 
     // criar novo usuário
     @PostMapping
+    @Operation(security = @SecurityRequirement(name = "bearer-jwt"))
     public Usuario create(@RequestBody UsuarioRequest request) {
         try {
             return usuarioService.save(request);

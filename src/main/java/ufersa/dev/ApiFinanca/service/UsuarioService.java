@@ -1,5 +1,6 @@
 package ufersa.dev.ApiFinanca.service;
 
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import ufersa.dev.ApiFinanca.dto.UsuarioRequest;
 import ufersa.dev.ApiFinanca.model.Usuario;
@@ -13,9 +14,11 @@ import java.util.UUID;
 public class UsuarioService {
 
     private final UsuarioRepository usuarioRepository;
+    private final PasswordEncoder passwordEncoder;
 
-    public UsuarioService(UsuarioRepository usuarioRepository) {
+    public UsuarioService(UsuarioRepository usuarioRepository, PasswordEncoder passwordEncoder) {
         this.usuarioRepository = usuarioRepository;
+        this.passwordEncoder = passwordEncoder;
     }
 
     // Listar
@@ -34,11 +37,14 @@ public class UsuarioService {
         if (request.getSenha() == null || request.getSenha().isBlank()) {
             throw new IllegalArgumentException("senha é obrigatória");
         }
+        if (usuarioRepository.existsByEmail(request.getEmail())) {
+            throw new IllegalArgumentException("email já cadastrado");
+        }
 
         Usuario usuario = new Usuario();
         usuario.setNome(request.getNome());
         usuario.setEmail(request.getEmail());
-        usuario.setSenha(request.getSenha());
+        usuario.setSenha(passwordEncoder.encode(request.getSenha()));
         usuario.setFaixaSalario(request.getFaixaSalario());
         usuario.setDataCriacao(LocalDateTime.now());
         usuario.setDataAtualizacao(LocalDateTime.now());
@@ -59,10 +65,13 @@ public class UsuarioService {
             usuario.setNome(request.getNome());
         }
         if (request.getEmail() != null && !request.getEmail().isBlank()) {
+            if (!request.getEmail().equals(usuario.getEmail()) && usuarioRepository.existsByEmail(request.getEmail())) {
+                throw new IllegalArgumentException("email já cadastrado");
+            }
             usuario.setEmail(request.getEmail());
         }
         if (request.getSenha() != null && !request.getSenha().isBlank()) {
-            usuario.setSenha(request.getSenha());
+            usuario.setSenha(passwordEncoder.encode(request.getSenha()));
         }
         if (request.getFaixaSalario() != null) {
             usuario.setFaixaSalario(request.getFaixaSalario());

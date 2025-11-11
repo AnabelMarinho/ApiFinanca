@@ -1,5 +1,7 @@
 package ufersa.dev.ApiFinanca.controller;
 
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import jakarta.persistence.EntityNotFoundException;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
@@ -34,6 +36,7 @@ public class CategoriaController {
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
+    @Operation(security = @SecurityRequirement(name = "bearer-jwt"))
     public Categoria create(@RequestBody CategoriaRequest request) {
         try {
             return categoriaService.save(request);
@@ -43,6 +46,7 @@ public class CategoriaController {
     }
 
     @PutMapping("/{id}")
+    @Operation(security = @SecurityRequirement(name = "bearer-jwt"))
     public Categoria update(@PathVariable UUID id, @RequestBody CategoriaRequest request) {
         try {
             return categoriaService.update(id, request);
@@ -55,6 +59,7 @@ public class CategoriaController {
 
     @DeleteMapping("/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
+    @Operation(security = @SecurityRequirement(name = "bearer-jwt"))
     public void delete(@PathVariable UUID id) {
         try {
             categoriaService.delete(id);
