@@ -43,6 +43,7 @@ public class SecurityConfig {
                         .requestMatchers("/transacao-recorrente", "/transacao-recorrente/**").permitAll()
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                         .anyRequest().authenticated()
+                        .requestMatchers("/onboarding").authenticated()
                 )
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
 

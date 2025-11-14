@@ -1,16 +1,17 @@
 package ufersa.dev.ApiFinanca.service;
 
 import jakarta.persistence.EntityNotFoundException;
+import jakarta.validation.constraints.DecimalMin;
+import jakarta.validation.constraints.NotNull;
 import org.springframework.stereotype.Service;
 import ufersa.dev.ApiFinanca.dto.TransacaoRecorrenteRequest;
-import ufersa.dev.ApiFinanca.model.Categoria;
-import ufersa.dev.ApiFinanca.model.TipoTransacao;
-import ufersa.dev.ApiFinanca.model.TransacaoRecorrente;
-import ufersa.dev.ApiFinanca.model.Usuario;
+import ufersa.dev.ApiFinanca.model.*;
 import ufersa.dev.ApiFinanca.repository.CategoriaRepository;
 import ufersa.dev.ApiFinanca.repository.TransacaoRecorrenteRepository;
 import ufersa.dev.ApiFinanca.repository.UsuarioRepository;
 
+import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -136,5 +137,32 @@ public class TransacaoRecorrenteService {
                 .orElseThrow(() -> new EntityNotFoundException("Categoria não encontrada para o id " + categoriaId));
         entity.setCategoria(categoria);
     }
+
+    public void saveFromOnboarding(
+            Usuario usuario,
+            TipoTransacao tipo,
+            @NotNull @DecimalMin("0.01") BigDecimal valor,
+            UUID categoriaId,
+            String descricao,
+            int diaRecorrencia
+    ) {
+
+        Categoria categoria = categoriaRepository.findById(categoriaId)
+                .orElseThrow(() -> new EntityNotFoundException("Categoria não encontrada para o id " + categoriaId));
+
+        TransacaoRecorrente recorrente = new TransacaoRecorrente();
+        recorrente.setUser(usuario);
+        recorrente.setTipo(tipo);
+        recorrente.setValor(valor);
+        recorrente.setDescricao(descricao);
+        recorrente.setCategoria(categoria);
+        recorrente.setDiaRecorrencia(diaRecorrencia);
+        recorrente.setAtiva(true);
+
+        transacaoRecorrenteRepository.save(recorrente);
+    }
+
+
+
 }
 

@@ -9,6 +9,7 @@ import lombok.Setter;
 import ufersa.dev.ApiFinanca.model.TipoTransacao;
 
 import java.math.BigDecimal;
+import java.util.UUID;
 
 @Getter
 @Setter
@@ -28,5 +29,5 @@ public class TransacaoRecorrenteOnboardingRequest {
     @Max(31)
     private Integer diaRecorrencia;
 
-    private Long categoriaId;
+    private UUID categoriaId;
 }
