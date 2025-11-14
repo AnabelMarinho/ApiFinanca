@@ -35,15 +35,15 @@ public class SecurityConfig {
                                 "/swagger-ui/**",
                                 "/swagger-ui.html"
                         ).permitAll()
-                        .requestMatchers(HttpMethod.GET, "/**").permitAll()
+                      //  .requestMatchers(HttpMethod.GET, "/**").permitAll()
                         .requestMatchers(HttpMethod.PUT, "/usuario", "/usuario/**").permitAll()
                         .requestMatchers(HttpMethod.DELETE, "/usuario", "/usuario/**").permitAll()
                         .requestMatchers("/transacao", "/transacao/**").permitAll()
                         .requestMatchers("/categoria", "/categoria/**").permitAll()
                         .requestMatchers("/transacao-recorrente", "/transacao-recorrente/**").permitAll()
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
+                        .requestMatchers("/onboarding/**").authenticated()
                         .anyRequest().authenticated()
-                        .requestMatchers("/onboarding").authenticated()
                 )
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
 
