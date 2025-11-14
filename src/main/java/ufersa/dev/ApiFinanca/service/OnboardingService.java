@@ -83,4 +83,12 @@ public class OnboardingService {
 
         return usuarioRepository.save(usuario);
     }
+
+    public boolean statusOnboarding(UUID usuarioId) {
+        Usuario usuario = usuarioRepository.findById(usuarioId)
+                .orElseThrow(() -> new EntityNotFoundException("Usuário não encontrado: " + usuarioId));
+
+        return !Boolean.TRUE.equals(usuario.getPrimeiroAcesso());
+    }
+
 }
