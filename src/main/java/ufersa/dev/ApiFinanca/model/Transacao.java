@@ -1,6 +1,8 @@
 package ufersa.dev.ApiFinanca.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -38,13 +40,28 @@ public class Transacao {
     private String descricao;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
+    @JsonIgnore
     @JoinColumn(name = "user_id", nullable = false)
     private Usuario user;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
+    @JsonIgnore
     @JoinColumn(name = "categoria_id", nullable = false)
     private Categoria categoria;
+
+    @JsonProperty("userId")
+    public UUID getUserId() {
+        return user != null ? user.getId() : null;
+    }
+
+    @JsonProperty("categoriaId")
+    public UUID getCategoriaId() {
+        return categoria != null ? categoria.getId() : null;
+    }
+
+    @JsonProperty("categoriaNome")
+    public String getCategoriaNome() {
+        return categoria != null ? categoria.getNome() : null;
+    }
 
 }
