@@ -92,6 +92,8 @@ public class AuthService {
         response.setFaixaSalario(usuario.getFaixaSalario());
         response.setDataCriacao(usuario.getDataCriacao());
         response.setDataAtualizacao(usuario.getDataAtualizacao());
+        response.setDataInicioControle(usuario.getDataInicioControle());
+        response.setPrimeiroAcesso(usuario.getPrimeiroAcesso());
         return response;
     }
 }

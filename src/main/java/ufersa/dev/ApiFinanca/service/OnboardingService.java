@@ -33,6 +33,13 @@ public class OnboardingService {
         return concluirOnboardingParaUsuario(usuario, request);
     }
 
+    public boolean statusOnboarding(String email) {
+        Usuario usuario = usuarioRepository.findByEmail(email)
+                .orElseThrow(() -> new EntityNotFoundException("Usuário não encontrado para email: " + email));
+
+        return statusOnboarding(usuario.getId());
+    }
+
     @Transactional
     public Usuario concluirOnboarding(UUID usuarioId, OnboardingRequest request) {
         Usuario usuario = usuarioRepository.findById(usuarioId)
