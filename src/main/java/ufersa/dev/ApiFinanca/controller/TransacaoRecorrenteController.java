@@ -3,6 +3,7 @@ package ufersa.dev.ApiFinanca.controller;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import jakarta.persistence.EntityNotFoundException;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
@@ -10,6 +11,7 @@ import ufersa.dev.ApiFinanca.dto.TransacaoRecorrenteRequest;
 import ufersa.dev.ApiFinanca.model.TransacaoRecorrente;
 import ufersa.dev.ApiFinanca.service.TransacaoRecorrenteService;
 
+import java.time.LocalDate;
 import java.util.List;
 import java.util.UUID;
 
@@ -66,6 +68,29 @@ public class TransacaoRecorrenteController {
         } catch (EntityNotFoundException ex) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, ex.getMessage(), ex);
         }
+    }
+
+    @GetMapping("/buscar-por-usuario/{usuarioId}")
+    @Operation(security = @SecurityRequirement(name = "bearer-jwt"))
+    public List<TransacaoRecorrente> buscarPorUsuario(@PathVariable UUID usuarioId) {
+        try {
+            return transacaoRecorrenteService.getByUser(usuarioId);
+        } catch (EntityNotFoundException ex) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, ex.getMessage(), ex);
+        }
+    }
+
+    @PostMapping("/processar-manual")
+    @ResponseStatus(HttpStatus.ACCEPTED)
+    @Operation(summary = "Processa recorrências manualmente",
+            description = "Dispara a geração automática de transações para a data informada (ou hoje)",
+            security = @SecurityRequirement(name = "bearer-jwt"))
+    public void processarRecorrenciasManual(
+            @RequestParam(value = "data", required = false)
+            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate dataReferencia
+    ) {
+        LocalDate data = dataReferencia != null ? dataReferencia : LocalDate.now();
+        transacaoRecorrenteService.processarRecorrenciasDoDia(data);
     }
 }
 
