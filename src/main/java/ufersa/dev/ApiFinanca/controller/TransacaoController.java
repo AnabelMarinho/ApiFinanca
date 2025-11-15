@@ -67,5 +67,15 @@ public class TransacaoController {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, ex.getMessage(), ex);
         }
     }
+
+    @GetMapping("/buscar-por-usuario/{usuarioId}")
+    @Operation(security = @SecurityRequirement(name = "bearer-jwt"))
+    public List<Transacao> buscarPorUsuario(@PathVariable UUID usuarioId) {
+        try {
+            return transacaoService.getByUser(usuarioId);
+        } catch (EntityNotFoundException ex) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, ex.getMessage(), ex);
+        }
+    }
 }
 

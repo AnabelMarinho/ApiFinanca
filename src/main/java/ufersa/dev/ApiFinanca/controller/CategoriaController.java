@@ -67,5 +67,15 @@ public class CategoriaController {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, ex.getMessage(), ex);
         }
     }
+
+    @GetMapping("/buscar-por-usuario/{usuarioId}")
+    @Operation(security = @SecurityRequirement(name = "bearer-jwt"))
+    public List<Categoria> buscarPorUsuario(@PathVariable UUID usuarioId) {
+        try {
+            return categoriaService.getDisponiveisParaUsuario(usuarioId);
+        } catch (EntityNotFoundException ex) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, ex.getMessage(), ex);
+        }
+    }
 }
 

@@ -64,6 +64,12 @@ public class TransacaoService {
         return transacaoRepository.findByUser(usuario);
     }
 
+    public List<Transacao> getByUser(UUID usuarioId) {
+        Usuario usuario = usuarioRepository.findById(usuarioId)
+                .orElseThrow(() -> new EntityNotFoundException("Usuário não encontrado para o id " + usuarioId));
+        return getByUser(usuario);
+    }
+
     public List<Transacao> getByUserOrderByDataDesc(Usuario usuario) {
         return transacaoRepository.findByUserOrderByDataDesc(usuario);
     }
