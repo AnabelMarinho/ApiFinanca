@@ -68,6 +68,12 @@ public class CategoriaService {
         return categoriaRepository.findCategoriasDisponiveisParaUsuario(usuario);
     }
 
+    public List<Categoria> getDisponiveisParaUsuario(UUID usuarioId) {
+        Usuario usuario = usuarioRepository.findById(usuarioId)
+                .orElseThrow(() -> new EntityNotFoundException("Usuário não encontrado para o id " + usuarioId));
+        return getDisponiveisParaUsuario(usuario);
+    }
+
     public List<Categoria> getDisponiveisParaUsuarioPorTipo(Usuario usuario, TipoTransacao tipo) {
         return categoriaRepository.findCategoriasDisponiveisParaUsuarioPorTipo(usuario, tipo);
     }
