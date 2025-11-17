@@ -59,9 +59,17 @@ public class SecurityConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
-        configuration.setAllowedOrigins(List.of("http://localhost:4200"));
+        // Permite origens de localhost e qualquer IP na rede local (192.168.x.x, 10.x.x.x, etc)
+        configuration.setAllowedOriginPatterns(List.of(
+            "http://localhost:*",
+            "http://127.0.0.1:*",
+            "http://192.168.*.*:*",
+            "http://10.*.*.*:*",
+            "http://172.16.*.*:*"
+        ));
         configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
-        configuration.setAllowedHeaders(List.of("Authorization", "Content-Type", "Accept"));
+        // Adiciona o header usuarioid que é usado pelo frontend
+        configuration.setAllowedHeaders(List.of("Authorization", "Content-Type", "Accept", "usuarioid", "usuarioId"));
         configuration.setAllowCredentials(true);
         configuration.setMaxAge(3600L);
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
