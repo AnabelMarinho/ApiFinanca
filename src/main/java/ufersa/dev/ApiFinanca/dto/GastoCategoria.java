@@ -7,4 +7,9 @@ import java.math.BigDecimal;
 public class GastoCategoria {
     private String categoria;
     private BigDecimal valor;
+
+    public GastoCategoria(String key, BigDecimal value) {
+        this.categoria = key;
+        this.valor = value;
+    }
 }
