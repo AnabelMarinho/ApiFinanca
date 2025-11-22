@@ -9,6 +9,7 @@ import ufersa.dev.ApiFinanca.model.TipoTransacao;
 import ufersa.dev.ApiFinanca.model.Usuario;
 import ufersa.dev.ApiFinanca.repository.UsuarioRepository;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
@@ -87,6 +88,11 @@ public class OnboardingService {
         usuario.setDataInicioControle(request.getDataInicioControle());
         usuario.setPrimeiroAcesso(false);
         usuario.setDataAtualizacao(LocalDateTime.now());
+        
+        // Salva o saldo inicial e atual se informado, caso contrário mantém null ou zero
+        BigDecimal saldoInicial = request.getSaldoAtual() != null ? request.getSaldoAtual() : BigDecimal.ZERO;
+        usuario.setSaldoInicial(saldoInicial);
+        usuario.setSaldoAtual(saldoInicial);
 
         return usuarioRepository.save(usuario);
     }

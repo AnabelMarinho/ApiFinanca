@@ -6,6 +6,7 @@ import jakarta.validation.constraints.Size;
 import lombok.Getter;
 import lombok.Setter;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.UUID;
@@ -22,6 +23,12 @@ public class OnboardingRequest {
      * Se não for informado, o controlador utilizará o usuário autenticado via JWT.
      */
     private UUID usuarioId;
+
+    /**
+     * Saldo atual inicial do usuário após o onboarding.
+     * Se não informado, será considerado zero.
+     */
+    private BigDecimal saldoAtual;
 
     @Valid
     @Size(max = 20, message = "O número máximo de transações recorrentes é 20.")

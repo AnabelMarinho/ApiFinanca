@@ -34,10 +34,10 @@ public class DashboardService {
         Usuario user = usuarioRepository.findById(userId)
                 .orElseThrow(() -> new RuntimeException("Usuário não encontrado"));
 
-        ConfiguracaoUsuario config = configuracaoUsuarioRepository.findByUsuario_Id(userId)
-                .orElseThrow(() -> new RuntimeException("Configuração do usuário não encontrada"));
-
-        int diaVirada = config.getDiaViradaMes();
+        // Se a configuração não existir, usa o dia 1 como padrão
+        int diaVirada = configuracaoUsuarioRepository.findByUsuario_Id(userId)
+                .map(ConfiguracaoUsuario::getDiaViradaMes)
+                .orElse(1); // Valor padrão: dia 1 do mês
         LocalDate hoje = LocalDate.now();
         LocalDate inicio;
         LocalDate fim;
@@ -57,7 +57,9 @@ public class DashboardService {
         BigDecimal totalDespesas = transacaoRepository
                 .calcularTotalPorTipoEPeriodo(user, TipoTransacao.DESPESA, inicio, fim);
 
-        BigDecimal saldoAtual = totalReceitas.subtract(totalDespesas);
+        // Calcula o saldo atual: saldo inicial (do onboarding) + receitas - despesas
+        BigDecimal saldoInicial = user.getSaldoInicial() != null ? user.getSaldoInicial() : BigDecimal.ZERO;
+        BigDecimal saldoAtual = saldoInicial.add(totalReceitas).subtract(totalDespesas);
 
         List<TransacaoResponse> transacoesRecentes =
                 transacaoRepository.findTop10ByUserOrderByDataDesc(user)

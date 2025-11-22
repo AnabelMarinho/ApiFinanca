@@ -1,9 +1,13 @@
 package ufersa.dev.ApiFinanca.controller;
 
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
+import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.server.ResponseStatusException;
 import ufersa.dev.ApiFinanca.dto.DashboardResponse;
 import ufersa.dev.ApiFinanca.service.DashboardService;
 
@@ -20,8 +24,13 @@ public class DashboardController {
     }
 
     @GetMapping
+    @Operation(security = @SecurityRequirement(name = "bearer-jwt"))
     public DashboardResponse getDashboard(@RequestParam UUID usuarioId) {
-        return dashboardService.getDashboard(usuarioId);
+        try {
+            return dashboardService.getDashboard(usuarioId);
+        } catch (RuntimeException ex) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, ex.getMessage(), ex);
+        }
     }
 }
 

@@ -43,13 +43,21 @@ public class JwtService {
     }
 
     public boolean isTokenValid(String token, String expectedUsername) {
-        String username = extractUsername(token);
-        return username.equals(expectedUsername) && !isTokenExpired(token);
+        try {
+            String username = extractUsername(token);
+            return username.equals(expectedUsername) && !isTokenExpired(token);
+        } catch (Exception ex) {
+            return false;
+        }
     }
 
     private boolean isTokenExpired(String token) {
-        Date expiration = extractClaim(token, Claims::getExpiration);
-        return expiration.before(new Date());
+        try {
+            Date expiration = extractClaim(token, Claims::getExpiration);
+            return expiration.before(new Date());
+        } catch (Exception ex) {
+            return true; // Se não conseguir extrair a data de expiração, considera expirado
+        }
     }
 
     private <T> T extractClaim(String token, Function<Claims, T> claimsResolver) {
