@@ -10,7 +10,7 @@ import lombok.Setter;
 public class UpdateSenhaRequest {
 
     @NotBlank(message = "A senha atual é obrigatória.")
-    private String Novasenha;
+    private String SenhaAtual;
 
     @NotBlank(message = "A nova senha é obrigatória.")
     @Size(min = 6, message = "A nova senha deve ter pelo menos 6 caracteres.")
