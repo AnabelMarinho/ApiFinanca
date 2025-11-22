@@ -49,4 +49,12 @@ public class PerfilService {
         usuario.setSenha(passwordEncoder.encode(request.getNovaSenha()));
         usuarioRepository.save(usuario);
     }
+
+    public void excluirConta(UUID usuarioId) {
+        Usuario usuario = usuarioRepository.findById(usuarioId)
+                .orElseThrow(() -> new RuntimeException("Usuário não encontrado."));
+
+        usuarioRepository.delete(usuario);
+    }
+
 }
