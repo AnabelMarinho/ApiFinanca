@@ -1,6 +1,7 @@
 package ufersa.dev.ApiFinanca.service;
 
 import jakarta.persistence.EntityNotFoundException;
+import jakarta.transaction.Transactional;
 import org.springframework.stereotype.Service;
 import ufersa.dev.ApiFinanca.dto.TransacaoRequest;
 import ufersa.dev.ApiFinanca.model.Categoria;
@@ -40,24 +41,38 @@ public class TransacaoService {
         return transacaoRepository.findById(id);
     }
 
+    @Transactional
     public Transacao save(TransacaoRequest request) {
         Transacao transacao = new Transacao();
         applyRequestToEntity(request, transacao);
-        return transacaoRepository.save(transacao);
+        Transacao saved = transacaoRepository.save(transacao);
+        atualizarSaldoUsuario(saved.getUser());
+        return saved;
     }
 
+    @Transactional
     public Transacao update(UUID id, TransacaoRequest request) {
         Transacao transacao = transacaoRepository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("Transação não encontrada para o id " + id));
+        Usuario usuarioAntigo = transacao.getUser();
         applyRequestToEntity(request, transacao);
-        return transacaoRepository.save(transacao);
+        Transacao saved = transacaoRepository.save(transacao);
+        // Atualiza o saldo do usuário (pode ter mudado se o userId mudou)
+        atualizarSaldoUsuario(saved.getUser());
+        // Se o usuário mudou, também atualiza o usuário antigo
+        if (!usuarioAntigo.getId().equals(saved.getUser().getId())) {
+            atualizarSaldoUsuario(usuarioAntigo);
+        }
+        return saved;
     }
 
+    @Transactional
     public void delete(UUID id) {
-        if (!transacaoRepository.existsById(id)) {
-            throw new EntityNotFoundException("Transação não encontrada para o id " + id);
-        }
+        Transacao transacao = transacaoRepository.findById(id)
+                .orElseThrow(() -> new EntityNotFoundException("Transação não encontrada para o id " + id));
+        Usuario usuario = transacao.getUser();
         transacaoRepository.deleteById(id);
+        atualizarSaldoUsuario(usuario);
     }
 
     public List<Transacao> getByUser(Usuario usuario) {
@@ -137,6 +152,30 @@ public class TransacaoService {
         Categoria categoria = categoriaRepository.findById(categoriaId)
                 .orElseThrow(() -> new EntityNotFoundException("Categoria não encontrada para o id " + categoriaId));
         transacao.setCategoria(categoria);
+    }
+
+    /**
+     * Atualiza o saldo atual do usuário baseado no saldo inicial + todas as receitas - todas as despesas.
+     * O saldo inicial é mantido separado e nunca muda após o onboarding.
+     */
+    private void atualizarSaldoUsuario(Usuario usuario) {
+        // Busca o usuário completo do banco para ter o saldo inicial
+        Usuario usuarioCompleto = usuarioRepository.findById(usuario.getId())
+                .orElseThrow(() -> new EntityNotFoundException("Usuário não encontrado"));
+        
+        // O saldo inicial é o valor salvo no onboarding e nunca muda
+        BigDecimal saldoInicial = usuarioCompleto.getSaldoInicial() != null 
+                ? usuarioCompleto.getSaldoInicial() 
+                : BigDecimal.ZERO;
+        
+        BigDecimal totalReceitas = transacaoRepository.calcularTotalReceitas(usuarioCompleto);
+        BigDecimal totalDespesas = transacaoRepository.calcularTotalDespesas(usuarioCompleto);
+        
+        // Recalcula o novo saldo: saldo inicial + receitas - despesas
+        BigDecimal novoSaldo = saldoInicial.add(totalReceitas).subtract(totalDespesas);
+        
+        usuarioCompleto.setSaldoAtual(novoSaldo);
+        usuarioRepository.save(usuarioCompleto);
     }
 }
 

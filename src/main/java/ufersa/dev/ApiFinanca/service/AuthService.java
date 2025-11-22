@@ -94,6 +94,7 @@ public class AuthService {
         response.setDataAtualizacao(usuario.getDataAtualizacao());
         response.setDataInicioControle(usuario.getDataInicioControle());
         response.setPrimeiroAcesso(usuario.getPrimeiroAcesso());
+        // saldoAtual não é retornado nos endpoints de auth
         return response;
     }
 }

@@ -39,6 +39,12 @@ public class Usuario {
     @Column(name = "primeiro_acesso", nullable = false)
     private Boolean primeiroAcesso = true;
 
+    @Column(name = "saldo_inicial")
+    private BigDecimal saldoInicial;
+
+    @Column(name = "saldo_atual")
+    private BigDecimal saldoAtual;
+
     @OneToMany(mappedBy = "usuario", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<Meta> metas = new ArrayList<>();
 

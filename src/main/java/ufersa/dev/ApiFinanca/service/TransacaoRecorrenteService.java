@@ -153,6 +153,32 @@ public class TransacaoRecorrenteService {
         transacao.setDescricao(recorrente.getDescricao());
         transacao.setData(dataExecucao);
         transacaoRepository.save(transacao);
+        // Atualiza o saldo do usuário após criar a transação
+        atualizarSaldoUsuario(recorrente.getUser());
+    }
+    
+    /**
+     * Atualiza o saldo atual do usuário baseado no saldo inicial + todas as receitas - todas as despesas.
+     * O saldo inicial é mantido separado e nunca muda após o onboarding.
+     */
+    private void atualizarSaldoUsuario(Usuario usuario) {
+        // Busca o usuário completo do banco para ter o saldo inicial
+        Usuario usuarioCompleto = usuarioRepository.findById(usuario.getId())
+                .orElseThrow(() -> new EntityNotFoundException("Usuário não encontrado"));
+        
+        // O saldo inicial é o valor salvo no onboarding e nunca muda
+        BigDecimal saldoInicial = usuarioCompleto.getSaldoInicial() != null 
+                ? usuarioCompleto.getSaldoInicial() 
+                : BigDecimal.ZERO;
+        
+        BigDecimal totalReceitas = transacaoRepository.calcularTotalReceitas(usuarioCompleto);
+        BigDecimal totalDespesas = transacaoRepository.calcularTotalDespesas(usuarioCompleto);
+        
+        // Recalcula o novo saldo: saldo inicial + receitas - despesas
+        BigDecimal novoSaldo = saldoInicial.add(totalReceitas).subtract(totalDespesas);
+        
+        usuarioCompleto.setSaldoAtual(novoSaldo);
+        usuarioRepository.save(usuarioCompleto);
     }
 
     private void registrarExecucao(TransacaoRecorrente recorrente,

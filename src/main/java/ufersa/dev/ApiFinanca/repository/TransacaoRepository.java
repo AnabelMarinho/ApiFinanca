@@ -49,5 +49,21 @@ public interface TransacaoRepository extends JpaRepository<Transacao, UUID> {
     // Buscar transações mais recentes do usuário (limitado)
     List<Transacao> findTop10ByUserOrderByDataDesc(Usuario user);
 
+    // Calcular soma total de receitas do usuário
+    @Query("SELECT COALESCE(SUM(t.valor), 0) FROM Transacao t WHERE t.user = :user AND t.tipo = :tipo")
+    BigDecimal calcularTotalReceitas(@Param("user") Usuario user, @Param("tipo") TipoTransacao tipo);
+    
+    default BigDecimal calcularTotalReceitas(Usuario user) {
+        return calcularTotalReceitas(user, TipoTransacao.RECEITA);
+    }
+
+    // Calcular soma total de despesas do usuário
+    @Query("SELECT COALESCE(SUM(t.valor), 0) FROM Transacao t WHERE t.user = :user AND t.tipo = :tipo")
+    BigDecimal calcularTotalDespesas(@Param("user") Usuario user, @Param("tipo") TipoTransacao tipo);
+    
+    default BigDecimal calcularTotalDespesas(Usuario user) {
+        return calcularTotalDespesas(user, TipoTransacao.DESPESA);
+    }
+
 }
 
