@@ -16,6 +16,7 @@ import ufersa.dev.ApiFinanca.repository.UsuarioRepository;
 import ufersa.dev.ApiFinanca.security.JwtService;
 
 import java.util.Optional;
+import java.util.UUID;
 
 @Service
 public class AuthService {
@@ -50,7 +51,7 @@ public class AuthService {
         usuario.setSenha(passwordEncoder.encode(request.getSenha()));
 
         Usuario savedUser = usuarioRepository.save(usuario);
-        String token = jwtService.generateToken(savedUser.getEmail());
+        String token = jwtService.generateToken(savedUser.getId().toString());
 
         return new AuthResponse(token, mapToUsuarioResponse(savedUser),
                 savedUser.getPrimeiroAcesso(), savedUser.getDataInicioControle());
@@ -61,10 +62,12 @@ public class AuthService {
                 new UsernamePasswordAuthenticationToken(request.getEmail(), request.getSenha())
         );
 
-        Usuario usuario = usuarioRepository.findByEmail(authentication.getName())
+        // Após autenticação, o authentication.getName() retorna o UUID (do UserDetails)
+        UUID userId = UUID.fromString(authentication.getName());
+        Usuario usuario = usuarioRepository.findById(userId)
                 .orElseThrow(() -> new IllegalArgumentException("Credenciais inválidas"));
 
-        String token = jwtService.generateToken(usuario.getEmail());
+        String token = jwtService.generateToken(usuario.getId().toString());
         return new AuthResponse(token, mapToUsuarioResponse(usuario),
                 usuario.getPrimeiroAcesso(), usuario.getDataInicioControle());
     }
@@ -77,8 +80,15 @@ public class AuthService {
             throw new IllegalStateException("Usuário não autenticado");
         }
 
-        String email = authentication.getName();
-        Usuario usuario = usuarioRepository.findByEmail(email)
+        String userIdString = authentication.getName();
+        UUID userId;
+        try {
+            userId = UUID.fromString(userIdString);
+        } catch (IllegalArgumentException ex) {
+            throw new IllegalStateException("ID de usuário inválido no token");
+        }
+        
+        Usuario usuario = usuarioRepository.findById(userId)
                 .orElseThrow(() -> new IllegalStateException("Usuário não encontrado"));
 
         return mapToUsuarioResponse(usuario);

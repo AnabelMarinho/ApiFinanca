@@ -8,10 +8,14 @@ import ufersa.dev.ApiFinanca.model.TransacaoRecorrenteExecucao;
 import java.time.LocalDate;
 import java.util.UUID;
 
+import java.util.List;
+
 @Repository
 public interface TransacaoRecorrenteExecucaoRepository extends JpaRepository<TransacaoRecorrenteExecucao, UUID> {
 
     boolean existsByTransacaoRecorrenteAndDataExecucao(TransacaoRecorrente transacaoRecorrente, LocalDate dataExecucao);
+    
+    List<TransacaoRecorrenteExecucao> findByTransacaoRecorrente(TransacaoRecorrente transacaoRecorrente);
 }
 
 
