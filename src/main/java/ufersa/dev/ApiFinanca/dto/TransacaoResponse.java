@@ -4,7 +4,7 @@ import lombok.Data;
 import ufersa.dev.ApiFinanca.model.Transacao;
 
 import java.math.BigDecimal;
-import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.UUID;
 
 @Data
@@ -13,7 +13,7 @@ public class TransacaoResponse {
     private UUID id;
     private String tipo;
     private BigDecimal valor;
-    private LocalDate data;
+    private LocalDateTime data;
     private String descricao;
     private String categoria;
 

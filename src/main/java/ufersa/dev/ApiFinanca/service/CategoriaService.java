@@ -40,14 +40,14 @@ public class CategoriaService {
 
     public Categoria update(UUID id, CategoriaRequest request) {
         Categoria categoria = categoriaRepository.findById(id)
-                .orElseThrow(() -> new EntityNotFoundException("Categoria não encontrada para o id " + id));
+                .orElseThrow(() -> new EntityNotFoundException("Categoria não encontrada com o ID informado."));
         applyRequestToEntity(request, categoria);
         return categoriaRepository.save(categoria);
     }
 
     public void delete(UUID id) {
         if (!categoriaRepository.existsById(id)) {
-            throw new EntityNotFoundException("Categoria não encontrada para o id " + id);
+            throw new EntityNotFoundException("Categoria não encontrada com o ID informado.");
         }
         categoriaRepository.deleteById(id);
     }
@@ -70,7 +70,7 @@ public class CategoriaService {
 
     public List<Categoria> getDisponiveisParaUsuario(UUID usuarioId) {
         Usuario usuario = usuarioRepository.findById(usuarioId)
-                .orElseThrow(() -> new EntityNotFoundException("Usuário não encontrado para o id " + usuarioId));
+                .orElseThrow(() -> new EntityNotFoundException("Usuário não encontrado com o ID informado."));
         return getDisponiveisParaUsuario(usuario);
     }
 
@@ -84,10 +84,10 @@ public class CategoriaService {
 
     private void applyRequestToEntity(CategoriaRequest request, Categoria categoria) {
         if (request.getNome() == null || request.getNome().isBlank()) {
-            throw new IllegalArgumentException("nome é obrigatório");
+            throw new IllegalArgumentException("O nome da categoria é obrigatório.");
         }
         if (request.getTipo() == null) {
-            throw new IllegalArgumentException("tipo é obrigatório");
+            throw new IllegalArgumentException("O tipo da categoria é obrigatório (RECEITA ou DESPESA).");
         }
 
         categoria.setNome(request.getNome());
@@ -100,7 +100,7 @@ public class CategoriaService {
         }
 
         Usuario usuario = usuarioRepository.findById(userId)
-                .orElseThrow(() -> new EntityNotFoundException("Usuário não encontrado para o id " + userId));
+                .orElseThrow(() -> new EntityNotFoundException("Usuário não encontrado com o ID informado."));
         categoria.setUser(usuario);
     }
 }

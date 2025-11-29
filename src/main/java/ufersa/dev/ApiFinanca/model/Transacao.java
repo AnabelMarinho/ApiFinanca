@@ -10,7 +10,7 @@ import lombok.NoArgsConstructor;
 import org.hibernate.annotations.UuidGenerator;
 
 import java.math.BigDecimal;
-import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.UUID;
 
 @Data
@@ -35,7 +35,7 @@ public class Transacao {
     private BigDecimal valor;
 
     @Column(nullable = false)
-    private LocalDate data;
+    private LocalDateTime data;
 
     private String descricao;
 

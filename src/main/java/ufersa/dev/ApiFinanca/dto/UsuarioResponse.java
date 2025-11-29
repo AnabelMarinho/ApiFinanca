@@ -19,6 +19,7 @@ public class UsuarioResponse {
     private LocalDateTime dataAtualizacao;
     private LocalDate dataInicioControle;
     private Boolean primeiroAcesso;
+    private BigDecimal saldoInicial;
     // saldoAtual não é retornado nos endpoints de auth
 }
 

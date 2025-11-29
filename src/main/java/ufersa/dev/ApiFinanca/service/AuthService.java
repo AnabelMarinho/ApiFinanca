@@ -42,7 +42,7 @@ public class AuthService {
     public AuthResponse register(AuthRegisterRequest request) {
         Optional<Usuario> existingUser = usuarioRepository.findByEmail(request.getEmail());
         if (existingUser.isPresent()) {
-            throw new IllegalArgumentException("Email já cadastrado");
+            throw new IllegalArgumentException("Este email já está cadastrado. Tente fazer login ou use outro email.");
         }
 
         Usuario usuario = new Usuario();
@@ -58,18 +58,24 @@ public class AuthService {
     }
 
     public AuthResponse login(AuthLoginRequest request) {
-        Authentication authentication = authenticationManager.authenticate(
-                new UsernamePasswordAuthenticationToken(request.getEmail(), request.getSenha())
-        );
+        try {
+            Authentication authentication = authenticationManager.authenticate(
+                    new UsernamePasswordAuthenticationToken(request.getEmail(), request.getSenha())
+            );
 
-        // Após autenticação, o authentication.getName() retorna o UUID (do UserDetails)
-        UUID userId = UUID.fromString(authentication.getName());
-        Usuario usuario = usuarioRepository.findById(userId)
-                .orElseThrow(() -> new IllegalArgumentException("Credenciais inválidas"));
+            // Após autenticação, o authentication.getName() retorna o UUID (do UserDetails)
+            UUID userId = UUID.fromString(authentication.getName());
+            Usuario usuario = usuarioRepository.findById(userId)
+                    .orElseThrow(() -> new IllegalArgumentException("Email ou senha incorretos"));
 
-        String token = jwtService.generateToken(usuario.getId().toString());
-        return new AuthResponse(token, mapToUsuarioResponse(usuario),
-                usuario.getPrimeiroAcesso(), usuario.getDataInicioControle());
+            String token = jwtService.generateToken(usuario.getId().toString());
+            return new AuthResponse(token, mapToUsuarioResponse(usuario),
+                    usuario.getPrimeiroAcesso(), usuario.getDataInicioControle());
+        } catch (org.springframework.security.authentication.BadCredentialsException ex) {
+            throw new IllegalArgumentException("Email ou senha incorretos");
+        } catch (org.springframework.security.core.AuthenticationException ex) {
+            throw new IllegalArgumentException("Falha na autenticação: " + ex.getMessage());
+        }
     }
 
     public UsuarioResponse getCurrentUser() {
@@ -77,7 +83,7 @@ public class AuthService {
         if (authentication == null
                 || !authentication.isAuthenticated()
                 || authentication.getPrincipal().equals("anonymousUser")) {
-            throw new IllegalStateException("Usuário não autenticado");
+            throw new IllegalStateException("Usuário não autenticado. Faça login novamente.");
         }
 
         String userIdString = authentication.getName();
@@ -85,11 +91,11 @@ public class AuthService {
         try {
             userId = UUID.fromString(userIdString);
         } catch (IllegalArgumentException ex) {
-            throw new IllegalStateException("ID de usuário inválido no token");
+            throw new IllegalStateException("Token inválido. Faça login novamente.");
         }
         
         Usuario usuario = usuarioRepository.findById(userId)
-                .orElseThrow(() -> new IllegalStateException("Usuário não encontrado"));
+                .orElseThrow(() -> new IllegalStateException("Usuário não encontrado. Faça login novamente."));
 
         return mapToUsuarioResponse(usuario);
     }
@@ -104,6 +110,7 @@ public class AuthService {
         response.setDataAtualizacao(usuario.getDataAtualizacao());
         response.setDataInicioControle(usuario.getDataInicioControle());
         response.setPrimeiroAcesso(usuario.getPrimeiroAcesso());
+        response.setSaldoInicial(usuario.getSaldoInicial());
         // saldoAtual não é retornado nos endpoints de auth
         return response;
     }

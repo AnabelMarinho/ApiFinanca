@@ -29,16 +29,16 @@ public class UsuarioService {
     // Criar
     public Usuario save(UsuarioRequest request) {
         if (request.getNome() == null || request.getNome().isBlank()) {
-            throw new IllegalArgumentException("nome é obrigatório");
+            throw new IllegalArgumentException("O nome é obrigatório.");
         }
         if (request.getEmail() == null || request.getEmail().isBlank()) {
-            throw new IllegalArgumentException("email é obrigatório");
+            throw new IllegalArgumentException("O email é obrigatório.");
         }
         if (request.getSenha() == null || request.getSenha().isBlank()) {
-            throw new IllegalArgumentException("senha é obrigatória");
+            throw new IllegalArgumentException("A senha é obrigatória.");
         }
         if (usuarioRepository.existsByEmail(request.getEmail())) {
-            throw new IllegalArgumentException("email já cadastrado");
+            throw new IllegalArgumentException("Este email já está cadastrado. Tente fazer login ou use outro email.");
         }
 
         Usuario usuario = new Usuario();
@@ -54,7 +54,7 @@ public class UsuarioService {
     // buscar por id
     public Usuario getById(UUID id) {
         return usuarioRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Usuario não encontrado"));
+                .orElseThrow(() -> new IllegalArgumentException("Usuário não encontrado com o ID informado."));
     }
 
     // atualizar
@@ -66,7 +66,7 @@ public class UsuarioService {
         }
         if (request.getEmail() != null && !request.getEmail().isBlank()) {
             if (!request.getEmail().equals(usuario.getEmail()) && usuarioRepository.existsByEmail(request.getEmail())) {
-                throw new IllegalArgumentException("email já cadastrado");
+                throw new IllegalArgumentException("Este email já está cadastrado. Use outro email.");
             }
             usuario.setEmail(request.getEmail());
         }
@@ -85,7 +85,7 @@ public class UsuarioService {
 
     public void delete(UUID id) {
         if (!usuarioRepository.existsById(id)) {
-            throw new RuntimeException("Usuário não encontrado");
+            throw new IllegalArgumentException("Usuário não encontrado com o ID informado.");
         }
         usuarioRepository.deleteById(id);
     }

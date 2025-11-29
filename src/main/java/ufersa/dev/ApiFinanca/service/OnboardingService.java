@@ -29,14 +29,14 @@ public class OnboardingService {
     @Transactional
     public Usuario concluirOnboarding(String email, OnboardingRequest request) {
         Usuario usuario = usuarioRepository.findByEmail(email)
-                .orElseThrow(() -> new EntityNotFoundException("Usuário não encontrado para email: " + email));
+                .orElseThrow(() -> new EntityNotFoundException("Usuário não encontrado com o email informado."));
 
         return concluirOnboardingParaUsuario(usuario, request);
     }
 
     public boolean statusOnboarding(String email) {
         Usuario usuario = usuarioRepository.findByEmail(email)
-                .orElseThrow(() -> new EntityNotFoundException("Usuário não encontrado para email: " + email));
+                .orElseThrow(() -> new EntityNotFoundException("Usuário não encontrado com o email informado."));
 
         return statusOnboarding(usuario.getId());
     }
@@ -44,22 +44,22 @@ public class OnboardingService {
     @Transactional
     public Usuario concluirOnboarding(UUID usuarioId, OnboardingRequest request) {
         Usuario usuario = usuarioRepository.findById(usuarioId)
-                .orElseThrow(() -> new EntityNotFoundException("Usuário não encontrado: " + usuarioId));
+                .orElseThrow(() -> new EntityNotFoundException("Usuário não encontrado com o ID informado."));
         return concluirOnboardingParaUsuario(usuario, request);
     }
 
     private Usuario concluirOnboardingParaUsuario(Usuario usuario, OnboardingRequest request) {
 
         if (Boolean.FALSE.equals(usuario.getPrimeiroAcesso())) {
-            throw new IllegalStateException("Onboarding já concluído para este usuário.");
+            throw new IllegalStateException("O onboarding já foi concluído para este usuário.");
         }
 
         if (request.getDataInicioControle() == null) {
-            throw new IllegalArgumentException("A data de início do controle é obrigatória.");
+            throw new IllegalArgumentException("A data de início do controle financeiro é obrigatória.");
         }
         int diaDoMes = request.getDataInicioControle().getDayOfMonth();
         if (diaDoMes > 28) {
-            throw new IllegalArgumentException("O dia de início deve estar entre 1 e 28.");
+            throw new IllegalArgumentException("O dia de início do controle deve estar entre 1 e 28.");
         }
 
         List<TransacaoRecorrenteOnboardingRequest> lista = request.getTransacoesRecorrentes();
@@ -99,7 +99,7 @@ public class OnboardingService {
 
     public boolean statusOnboarding(UUID usuarioId) {
         Usuario usuario = usuarioRepository.findById(usuarioId)
-                .orElseThrow(() -> new EntityNotFoundException("Usuário não encontrado: " + usuarioId));
+                .orElseThrow(() -> new EntityNotFoundException("Usuário não encontrado com o ID informado."));
 
         return !Boolean.TRUE.equals(usuario.getPrimeiroAcesso());
     }
