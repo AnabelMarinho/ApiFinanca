@@ -2,16 +2,16 @@
 -- SCRIPT DE TESTE - ADICIONAR DADOS DE ALERTAS NO USUÁRIO EXISTENTE
 -- ============================================================================
 -- Este script adiciona transações e metas ao usuário para testar alertas
--- UUID do usuário: 4fe9e3cb-6db1-416c-9dbf-6b80da2ef9b2
+-- UUID do usuário: d8c2ee7a-b9f4-4ee0-bced-c7ba77a4b2f4
 -- Dia de virada: 4 (hoje)
 -- ============================================================================
 
 -- Limpar dados anteriores deste usuário (se houver)
-DELETE FROM aporte_metas WHERE meta_id IN (SELECT id FROM metas WHERE usuario_id = '4fe9e3cb-6db1-416c-9dbf-6b80da2ef9b2');
-DELETE FROM metas WHERE usuario_id = '4fe9e3cb-6db1-416c-9dbf-6b80da2ef9b2';
-DELETE FROM transacoes WHERE user_id = '4fe9e3cb-6db1-416c-9dbf-6b80da2ef9b2';
-DELETE FROM transacoes_recorrentes WHERE user_id = '4fe9e3cb-6db1-416c-9dbf-6b80da2ef9b2';
-DELETE FROM alertas WHERE usuario_id = '4fe9e3cb-6db1-416c-9dbf-6b80da2ef9b2';
+DELETE FROM aporte_metas WHERE meta_id IN (SELECT id FROM metas WHERE usuario_id = 'd8c2ee7a-b9f4-4ee0-bced-c7ba77a4b2f4');
+DELETE FROM metas WHERE usuario_id = 'd8c2ee7a-b9f4-4ee0-bced-c7ba77a4b2f4';
+DELETE FROM transacoes WHERE user_id = 'd8c2ee7a-b9f4-4ee0-bced-c7ba77a4b2f4';
+DELETE FROM transacoes_recorrentes WHERE user_id = 'd8c2ee7a-b9f4-4ee0-bced-c7ba77a4b2f4';
+DELETE FROM alertas WHERE usuario_id = 'd8c2ee7a-b9f4-4ee0-bced-c7ba77a4b2f4';
 
 -- ============================================================================
 -- ATUALIZAR DADOS DO USUÁRIO
@@ -23,38 +23,38 @@ SET
     saldo_atual = 2500.00,
     primeiro_acesso = false,
     data_inicio_controle = DATE_TRUNC('month', CURRENT_DATE)
-WHERE id = '4fe9e3cb-6db1-416c-9dbf-6b80da2ef9b2';
+WHERE id = 'd8c2ee7a-b9f4-4ee0-bced-c7ba77a4b2f4';
 
 -- ============================================================================
 -- GARANTIR CONFIGURAÇÃO DO USUÁRIO (DIA DE VIRADA = 4)
 -- ============================================================================
 INSERT INTO configuracoes_usuario (id, usuario_id, dia_virada_mes)
-VALUES (gen_random_uuid(), '4fe9e3cb-6db1-416c-9dbf-6b80da2ef9b2', 4)
+VALUES (gen_random_uuid(), 'd8c2ee7a-b9f4-4ee0-bced-c7ba77a4b2f4', 4)
 ON CONFLICT (usuario_id) DO UPDATE SET dia_virada_mes = 4;
 
 -- ============================================================================
 -- CRIAR PREFERÊNCIAS DE ALERTAS (TODAS ATIVAS)
 -- ============================================================================
 -- Limpar preferências antigas
-DELETE FROM preferencias_alerta WHERE usuario_id = '4fe9e3cb-6db1-416c-9dbf-6b80da2ef9b2';
+DELETE FROM preferencias_alerta WHERE usuario_id = 'd8c2ee7a-b9f4-4ee0-bced-c7ba77a4b2f4';
 
 -- Inserir todas as preferências ativas
 INSERT INTO preferencias_alerta (id, usuario_id, tipo_alerta, ativo)
 VALUES 
-    (gen_random_uuid(), '4fe9e3cb-6db1-416c-9dbf-6b80da2ef9b2', 'GASTO_ACIMA_MEDIA', true),
-    (gen_random_uuid(), '4fe9e3cb-6db1-416c-9dbf-6b80da2ef9b2', 'META_PROXIMA_VENCIMENTO', true),
-    (gen_random_uuid(), '4fe9e3cb-6db1-416c-9dbf-6b80da2ef9b2', 'PROJECAO_SALDO_NEGATIVO', true),
-    (gen_random_uuid(), '4fe9e3cb-6db1-416c-9dbf-6b80da2ef9b2', 'PROGRESSO_META_LENTO', true),
-    (gen_random_uuid(), '4fe9e3cb-6db1-416c-9dbf-6b80da2ef9b2', 'META_ALCANCADA', true),
-    (gen_random_uuid(), '4fe9e3cb-6db1-416c-9dbf-6b80da2ef9b2', 'GASTO_CATEGORIA_ELEVADO', true),
-    (gen_random_uuid(), '4fe9e3cb-6db1-416c-9dbf-6b80da2ef9b2', 'ECONOMIA_POSITIVA', true);
+    (gen_random_uuid(), 'd8c2ee7a-b9f4-4ee0-bced-c7ba77a4b2f4', 'GASTO_ACIMA_MEDIA', true),
+    (gen_random_uuid(), 'd8c2ee7a-b9f4-4ee0-bced-c7ba77a4b2f4', 'META_PROXIMA_VENCIMENTO', true),
+    (gen_random_uuid(), 'd8c2ee7a-b9f4-4ee0-bced-c7ba77a4b2f4', 'PROJECAO_SALDO_NEGATIVO', true),
+    (gen_random_uuid(), 'd8c2ee7a-b9f4-4ee0-bced-c7ba77a4b2f4', 'PROGRESSO_META_LENTO', true),
+    (gen_random_uuid(), 'd8c2ee7a-b9f4-4ee0-bced-c7ba77a4b2f4', 'META_ALCANCADA', true),
+    (gen_random_uuid(), 'd8c2ee7a-b9f4-4ee0-bced-c7ba77a4b2f4', 'GASTO_CATEGORIA_ELEVADO', true),
+    (gen_random_uuid(), 'd8c2ee7a-b9f4-4ee0-bced-c7ba77a4b2f4', 'ECONOMIA_POSITIVA', true);
 
 -- ============================================================================
 -- ADICIONAR TRANSAÇÕES E METAS
 -- ============================================================================
 DO $$
 DECLARE
-    usuario_id UUID := '4fe9e3cb-6db1-416c-9dbf-6b80da2ef9b2';
+    usuario_id UUID := 'd8c2ee7a-b9f4-4ee0-bced-c7ba77a4b2f4';
     cat_alimentacao_id UUID;
     cat_moradia_id UUID;
     cat_transporte_id UUID;
@@ -229,26 +229,26 @@ END $$;
 -- Ver o usuário atualizado
 SELECT id, nome, email, faixa_salario, saldo_atual, data_inicio_controle, primeiro_acesso
 FROM usuarios 
-WHERE id = '4fe9e3cb-6db1-416c-9dbf-6b80da2ef9b2';
+WHERE id = 'd8c2ee7a-b9f4-4ee0-bced-c7ba77a4b2f4';
 
 -- Ver configuração do usuário
 SELECT usuario_id, dia_virada_mes
 FROM configuracoes_usuario
-WHERE usuario_id = '4fe9e3cb-6db1-416c-9dbf-6b80da2ef9b2';
+WHERE usuario_id = 'd8c2ee7a-b9f4-4ee0-bced-c7ba77a4b2f4';
 
 -- Ver as metas criadas
 SELECT m.nome, m.valor_alvo, m.valor_atual, m.data_alvo, m.data_criacao,
        ROUND((m.valor_atual / m.valor_alvo * 100)::numeric, 2) as percentual_alcancado,
        m.data_alvo - CURRENT_DATE as dias_restantes
 FROM metas m
-WHERE m.usuario_id = '4fe9e3cb-6db1-416c-9dbf-6b80da2ef9b2'
+WHERE m.usuario_id = 'd8c2ee7a-b9f4-4ee0-bced-c7ba77a4b2f4'
 ORDER BY m.data_criacao;
 
 -- Ver transações do mês atual por categoria
 SELECT c.nome as categoria, t.tipo, SUM(t.valor) as total
 FROM transacoes t
 JOIN categorias c ON t.categoria_id = c.id
-WHERE t.user_id = '4fe9e3cb-6db1-416c-9dbf-6b80da2ef9b2'
+WHERE t.user_id = 'd8c2ee7a-b9f4-4ee0-bced-c7ba77a4b2f4'
   AND t.data >= DATE_TRUNC('month', CURRENT_DATE)
 GROUP BY c.nome, t.tipo
 ORDER BY t.tipo, total DESC;
@@ -256,20 +256,20 @@ ORDER BY t.tipo, total DESC;
 -- Ver preferências de alertas
 SELECT tipo_alerta, ativo
 FROM preferencias_alerta
-WHERE usuario_id = '4fe9e3cb-6db1-416c-9dbf-6b80da2ef9b2'
+WHERE usuario_id = 'd8c2ee7a-b9f4-4ee0-bced-c7ba77a4b2f4'
 ORDER BY tipo_alerta;
 
 -- Contar totais
 SELECT 
-    (SELECT COUNT(*) FROM transacoes WHERE user_id = '4fe9e3cb-6db1-416c-9dbf-6b80da2ef9b2') as total_transacoes,
-    (SELECT COUNT(*) FROM metas WHERE usuario_id = '4fe9e3cb-6db1-416c-9dbf-6b80da2ef9b2') as total_metas,
-    (SELECT COUNT(*) FROM preferencias_alerta WHERE usuario_id = '4fe9e3cb-6db1-416c-9dbf-6b80da2ef9b2') as total_preferencias,
-    (SELECT COUNT(*) FROM alertas WHERE usuario_id = '4fe9e3cb-6db1-416c-9dbf-6b80da2ef9b2') as total_alertas;
+    (SELECT COUNT(*) FROM transacoes WHERE user_id = 'd8c2ee7a-b9f4-4ee0-bced-c7ba77a4b2f4') as total_transacoes,
+    (SELECT COUNT(*) FROM metas WHERE usuario_id = 'd8c2ee7a-b9f4-4ee0-bced-c7ba77a4b2f4') as total_metas,
+    (SELECT COUNT(*) FROM preferencias_alerta WHERE usuario_id = 'd8c2ee7a-b9f4-4ee0-bced-c7ba77a4b2f4') as total_preferencias,
+    (SELECT COUNT(*) FROM alertas WHERE usuario_id = 'd8c2ee7a-b9f4-4ee0-bced-c7ba77a4b2f4') as total_alertas;
 
 -- Ver alertas criados (se houver)
 SELECT tipo_alerta, mensagem, severidade, visto, data_criacao
 FROM alertas
-WHERE usuario_id = '4fe9e3cb-6db1-416c-9dbf-6b80da2ef9b2'
+WHERE usuario_id = 'd8c2ee7a-b9f4-4ee0-bced-c7ba77a4b2f4'
 ORDER BY data_criacao DESC;
 
 -- ============================================================================
@@ -280,7 +280,7 @@ ORDER BY data_criacao DESC;
 
 DO $$
 DECLARE
-    v_usuario_id UUID := '4fe9e3cb-6db1-416c-9dbf-6b80da2ef9b2';
+    v_usuario_id UUID := 'd8c2ee7a-b9f4-4ee0-bced-c7ba77a4b2f4';
     meta_viagem_id UUID;
     meta_carro_id UUID;
     meta_notebook_id UUID;
@@ -369,16 +369,16 @@ END $$;
    
    INSERT INTO alertas (id, usuario_id, tipo_alerta, mensagem, severidade, visto)
    VALUES 
-       (gen_random_uuid(), '4fe9e3cb-6db1-416c-9dbf-6b80da2ef9b2', 'GASTO_ACIMA_MEDIA', 
+       (gen_random_uuid(), 'd8c2ee7a-b9f4-4ee0-bced-c7ba77a4b2f4', 'GASTO_ACIMA_MEDIA', 
         'Gasto na categoria Alimentação está 82% acima da média histórica', 'ALTA', false),
-       (gen_random_uuid(), '4fe9e3cb-6db1-416c-9dbf-6b80da2ef9b2', 'META_PROXIMA_VENCIMENTO', 
+       (gen_random_uuid(), 'd8c2ee7a-b9f4-4ee0-bced-c7ba77a4b2f4', 'META_PROXIMA_VENCIMENTO', 
         'Meta "Viagem de Férias" vence em 5 dias!', 'MEDIA', false);
 
 7. Para limpar os dados de teste futuramente:
-   DELETE FROM alertas WHERE usuario_id = '4fe9e3cb-6db1-416c-9dbf-6b80da2ef9b2';
-   DELETE FROM aporte_metas WHERE meta_id IN (SELECT id FROM metas WHERE usuario_id = '4fe9e3cb-6db1-416c-9dbf-6b80da2ef9b2');
-   DELETE FROM metas WHERE usuario_id = '4fe9e3cb-6db1-416c-9dbf-6b80da2ef9b2';
-   DELETE FROM transacoes WHERE user_id = '4fe9e3cb-6db1-416c-9dbf-6b80da2ef9b2';
-   DELETE FROM transacoes_recorrentes WHERE user_id = '4fe9e3cb-6db1-416c-9dbf-6b80da2ef9b2';
+   DELETE FROM alertas WHERE usuario_id = 'd8c2ee7a-b9f4-4ee0-bced-c7ba77a4b2f4';
+   DELETE FROM aporte_metas WHERE meta_id IN (SELECT id FROM metas WHERE usuario_id = 'd8c2ee7a-b9f4-4ee0-bced-c7ba77a4b2f4');
+   DELETE FROM metas WHERE usuario_id = 'd8c2ee7a-b9f4-4ee0-bced-c7ba77a4b2f4';
+   DELETE FROM transacoes WHERE user_id = 'd8c2ee7a-b9f4-4ee0-bced-c7ba77a4b2f4';
+   DELETE FROM transacoes_recorrentes WHERE user_id = 'd8c2ee7a-b9f4-4ee0-bced-c7ba77a4b2f4';
 */
 
