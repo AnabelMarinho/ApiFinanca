@@ -46,6 +46,7 @@ public class TransacaoService {
         Transacao transacao = new Transacao();
         applyRequestToEntity(request, transacao);
         Transacao saved = transacaoRepository.save(transacao);
+        transacaoRepository.flush(); // Garante que a transação seja persistida antes de recalcular o saldo
         atualizarSaldoUsuario(saved.getUser());
         return saved;
     }
@@ -53,25 +54,30 @@ public class TransacaoService {
     @Transactional
     public Transacao update(UUID id, TransacaoRequest request) {
         Transacao transacao = transacaoRepository.findById(id)
-                .orElseThrow(() -> new EntityNotFoundException("Transação não encontrada para o id " + id));
+                .orElseThrow(() -> new EntityNotFoundException("Transação não encontrada com o ID informado."));
         Usuario usuarioAntigo = transacao.getUser();
         applyRequestToEntity(request, transacao);
         Transacao saved = transacaoRepository.save(transacao);
-        // Atualiza o saldo do usuário (pode ter mudado se o userId mudou)
+        transacaoRepository.flush(); // Garante que a transação seja persistida antes de recalcular o saldo
+        
+        // Atualiza o saldo do usuário (pode ter mudado se o valor, tipo ou userId mudou)
         atualizarSaldoUsuario(saved.getUser());
+        
         // Se o usuário mudou, também atualiza o usuário antigo
         if (!usuarioAntigo.getId().equals(saved.getUser().getId())) {
             atualizarSaldoUsuario(usuarioAntigo);
         }
+        
         return saved;
     }
 
     @Transactional
     public void delete(UUID id) {
         Transacao transacao = transacaoRepository.findById(id)
-                .orElseThrow(() -> new EntityNotFoundException("Transação não encontrada para o id " + id));
+                .orElseThrow(() -> new EntityNotFoundException("Transação não encontrada com o ID informado."));
         Usuario usuario = transacao.getUser();
         transacaoRepository.deleteById(id);
+        transacaoRepository.flush(); // Garante que a transação seja deletada antes de recalcular o saldo
         atualizarSaldoUsuario(usuario);
     }
 
@@ -81,7 +87,7 @@ public class TransacaoService {
 
     public List<Transacao> getByUser(UUID usuarioId) {
         Usuario usuario = usuarioRepository.findById(usuarioId)
-                .orElseThrow(() -> new EntityNotFoundException("Usuário não encontrado para o id " + usuarioId));
+                .orElseThrow(() -> new EntityNotFoundException("Usuário não encontrado com o ID informado."));
         return getByUser(usuario);
     }
 
@@ -123,13 +129,13 @@ public class TransacaoService {
 
     private void applyRequestToEntity(TransacaoRequest request, Transacao transacao) {
         if (request.getTipo() == null) {
-            throw new IllegalArgumentException("tipo é obrigatório");
+            throw new IllegalArgumentException("O tipo da transação é obrigatório (RECEITA ou DESPESA).");
         }
         if (request.getValor() == null) {
-            throw new IllegalArgumentException("valor é obrigatório");
+            throw new IllegalArgumentException("O valor da transação é obrigatório.");
         }
         if (request.getData() == null) {
-            throw new IllegalArgumentException("data é obrigatória");
+            throw new IllegalArgumentException("A data da transação é obrigatória.");
         }
 
         transacao.setTipo(request.getTipo());
@@ -139,18 +145,18 @@ public class TransacaoService {
 
         UUID userId = request.getUserId();
         if (userId == null) {
-            throw new IllegalArgumentException("userId é obrigatório");
+            throw new IllegalArgumentException("O ID do usuário é obrigatório.");
         }
         Usuario usuario = usuarioRepository.findById(userId)
-                .orElseThrow(() -> new EntityNotFoundException("Usuário não encontrado para o id " + userId));
+                .orElseThrow(() -> new EntityNotFoundException("Usuário não encontrado com o ID informado."));
         transacao.setUser(usuario);
 
         UUID categoriaId = request.getCategoriaId();
         if (categoriaId == null) {
-            throw new IllegalArgumentException("categoriaId é obrigatório");
+            throw new IllegalArgumentException("O ID da categoria é obrigatório.");
         }
         Categoria categoria = categoriaRepository.findById(categoriaId)
-                .orElseThrow(() -> new EntityNotFoundException("Categoria não encontrada para o id " + categoriaId));
+                .orElseThrow(() -> new EntityNotFoundException("Categoria não encontrada com o ID informado."));
         transacao.setCategoria(categoria);
     }
 

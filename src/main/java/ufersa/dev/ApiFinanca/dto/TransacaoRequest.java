@@ -3,14 +3,14 @@ package ufersa.dev.ApiFinanca.dto;
 import ufersa.dev.ApiFinanca.model.TipoTransacao;
 
 import java.math.BigDecimal;
-import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.UUID;
 
 public class TransacaoRequest {
 
     private TipoTransacao tipo;
     private BigDecimal valor;
-    private LocalDate data;
+    private LocalDateTime data;
     private String descricao;
     private UUID userId;
     private UUID categoriaId;
@@ -31,11 +31,11 @@ public class TransacaoRequest {
         this.valor = valor;
     }
 
-    public LocalDate getData() {
+    public LocalDateTime getData() {
         return data;
     }
 
-    public void setData(LocalDate data) {
+    public void setData(LocalDateTime data) {
         this.data = data;
     }
 

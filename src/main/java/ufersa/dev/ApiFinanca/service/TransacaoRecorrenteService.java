@@ -58,14 +58,14 @@ public class TransacaoRecorrenteService {
 
     public TransacaoRecorrente update(UUID id, TransacaoRecorrenteRequest request) {
         TransacaoRecorrente transacaoRecorrente = transacaoRecorrenteRepository.findById(id)
-                .orElseThrow(() -> new EntityNotFoundException("Transação recorrente não encontrada para o id " + id));
+                .orElseThrow(() -> new EntityNotFoundException("Transação recorrente não encontrada com o ID informado."));
         applyRequestToEntity(request, transacaoRecorrente);
         return transacaoRecorrenteRepository.save(transacaoRecorrente);
     }
 
     public void delete(UUID id) {
         if (!transacaoRecorrenteRepository.existsById(id)) {
-            throw new EntityNotFoundException("Transação recorrente não encontrada para o id " + id);
+            throw new EntityNotFoundException("Transação recorrente não encontrada com o ID informado.");
         }
         transacaoRecorrenteRepository.deleteById(id);
     }
@@ -76,7 +76,7 @@ public class TransacaoRecorrenteService {
 
     public List<TransacaoRecorrente> getByUser(UUID usuarioId) {
         Usuario usuario = usuarioRepository.findById(usuarioId)
-                .orElseThrow(() -> new EntityNotFoundException("Usuário não encontrado para o id " + usuarioId));
+                .orElseThrow(() -> new EntityNotFoundException("Usuário não encontrado com o ID informado."));
         return getByUser(usuario);
     }
 
@@ -151,7 +151,8 @@ public class TransacaoRecorrenteService {
         transacao.setTipo(recorrente.getTipo());
         transacao.setValor(recorrente.getValor());
         transacao.setDescricao(recorrente.getDescricao());
-        transacao.setData(dataExecucao);
+        // Converte LocalDate para LocalDateTime (início do dia)
+        transacao.setData(dataExecucao.atStartOfDay());
         transacaoRepository.save(transacao);
         // Atualiza o saldo do usuário após criar a transação
         atualizarSaldoUsuario(recorrente.getUser());
@@ -205,10 +206,10 @@ public class TransacaoRecorrenteService {
 
     private void applyRequestToEntity(TransacaoRecorrenteRequest request, TransacaoRecorrente entity) {
         if (request.getTipo() == null) {
-            throw new IllegalArgumentException("tipo é obrigatório");
+            throw new IllegalArgumentException("O tipo da transação recorrente é obrigatório (RECEITA ou DESPESA).");
         }
         if (request.getValor() == null) {
-            throw new IllegalArgumentException("valor é obrigatório");
+            throw new IllegalArgumentException("O valor da transação recorrente é obrigatório.");
         }
 
         entity.setTipo(request.getTipo());
@@ -217,7 +218,7 @@ public class TransacaoRecorrenteService {
 
         Integer diaRecorrencia = request.getDiaRecorrencia();
         if (diaRecorrencia == null) {
-            throw new IllegalArgumentException("diaRecorrencia é obrigatório");
+            throw new IllegalArgumentException("O dia de recorrência é obrigatório (deve estar entre 1 e 28).");
         }
         entity.setDiaRecorrencia(diaRecorrencia);
 
@@ -227,18 +228,18 @@ public class TransacaoRecorrenteService {
 
         UUID userId = request.getUserId();
         if (userId == null) {
-            throw new IllegalArgumentException("userId é obrigatório");
+            throw new IllegalArgumentException("O ID do usuário é obrigatório.");
         }
         Usuario usuario = usuarioRepository.findById(userId)
-                .orElseThrow(() -> new EntityNotFoundException("Usuário não encontrado para o id " + userId));
+                .orElseThrow(() -> new EntityNotFoundException("Usuário não encontrado com o ID informado."));
         entity.setUser(usuario);
 
         UUID categoriaId = request.getCategoriaId();
         if (categoriaId == null) {
-            throw new IllegalArgumentException("categoriaId é obrigatório");
+            throw new IllegalArgumentException("O ID da categoria é obrigatório.");
         }
         Categoria categoria = categoriaRepository.findById(categoriaId)
-                .orElseThrow(() -> new EntityNotFoundException("Categoria não encontrada para o id " + categoriaId));
+                .orElseThrow(() -> new EntityNotFoundException("Categoria não encontrada com o ID informado."));
         entity.setCategoria(categoria);
     }
 
@@ -252,7 +253,7 @@ public class TransacaoRecorrenteService {
     ) {
 
         Categoria categoria = categoriaRepository.findById(categoriaId)
-                .orElseThrow(() -> new EntityNotFoundException("Categoria não encontrada para o id " + categoriaId));
+                .orElseThrow(() -> new EntityNotFoundException("Categoria não encontrada com o ID informado."));
 
         TransacaoRecorrente recorrente = new TransacaoRecorrente();
         recorrente.setUser(usuario);
