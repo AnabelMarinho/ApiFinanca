@@ -6,6 +6,7 @@ import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
+import ufersa.dev.ApiFinanca.dto.AporteRequest;
 import ufersa.dev.ApiFinanca.dto.MetaRequest;
 import ufersa.dev.ApiFinanca.dto.MetaResponse;
 import ufersa.dev.ApiFinanca.model.Usuario;
@@ -62,7 +63,22 @@ public class MetaController {
         Usuario usuarioLogado = authService.getCurrentUserAsEntity();
         return metaService.atualizarMeta(id, request, usuarioLogado);
     }
+    @DeleteMapping("/{id}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    @Operation(security = @SecurityRequirement(name = "bearer-jwt"))
+    public void excluirMeta(@PathVariable UUID id) {
+        Usuario usuarioLogado = authService.getCurrentUserAsEntity();
+        metaService.excluirMeta(id, usuarioLogado);
+    }
 
-
+    @PostMapping("/{id}/aportes")
+    @ResponseStatus(HttpStatus.CREATED)
+    @Operation(security = @SecurityRequirement(name = "bearer-jwt"))
+    public MetaResponse adicionarAporte(
+            @PathVariable UUID id,
+            @Valid @RequestBody AporteRequest request) {
+        Usuario usuarioLogado = authService.getCurrentUserAsEntity();
+        return metaService.adicionarAporte(id, request, usuarioLogado);
+    }
 
 }

@@ -86,6 +86,8 @@ public class MetaService {
                 .stream()
                 .map(a -> new AporteResponse(a.getValor(), a.getData()))
                 .toList();
+        boolean concluida = meta.getValorAtual().compareTo(meta.getValorAlvo()) >= 0;
+
         return new MetaResponse(
                 meta.getId(),
                 meta.getNome(),
@@ -93,17 +95,20 @@ public class MetaService {
                 meta.getValorAtual(),
                 meta.getDataAlvo(),
                 progresso,
-                aportesResponse
+                aportesResponse,
+                concluida
         );
     }
+
 
     private BigDecimal calcularProgresso(Meta meta) {
         if (meta.getValorAlvo() == null || meta.getValorAlvo().compareTo(BigDecimal.ZERO) == 0) {
             return BigDecimal.ZERO;
         }
-        return meta.getValorAtual()
+        BigDecimal progresso = meta.getValorAtual()
                 .divide(meta.getValorAlvo(), 2, RoundingMode.HALF_UP)
                 .multiply(new BigDecimal("100"));
+        return progresso.min(new BigDecimal("100"));
     }
 
     public BigDecimal calcularAporteMensal(Meta meta, int mesesRestantes) {
