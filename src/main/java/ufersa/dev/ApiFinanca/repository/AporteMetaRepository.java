@@ -9,5 +9,5 @@ import java.util.UUID;
 
 @Repository
 public interface AporteMetaRepository extends JpaRepository<AporteMeta,UUID> {
-    List<AporteMeta> findByUsuarioId(UUID id);
+    List<AporteMeta> findByMetaId(UUID id);
 }

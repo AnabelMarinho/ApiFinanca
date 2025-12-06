@@ -28,13 +28,19 @@ public class AporteMeta {
     @JoinColumn(name = "meta_id", nullable = false)
     private Meta meta;
 
+    public AporteMeta() {
+    }
+
     public AporteMeta(BigDecimal valor, UUID id, LocalDate data, Meta meta) {
         this.valor = valor;
         this.id = id;
         this.data = data;
         this.meta = meta;
     }
-    public AporteMeta() {
-    }
 
+    public AporteMeta(BigDecimal valor, Meta meta) {
+        this.valor = valor;
+        this.meta = meta;
+        this.data = LocalDate.now();
+    }
 }

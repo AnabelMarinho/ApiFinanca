@@ -2,20 +2,30 @@ package ufersa.dev.ApiFinanca.service;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.web.server.ResponseStatusException;
+import ufersa.dev.ApiFinanca.dto.AporteRequest;
+import ufersa.dev.ApiFinanca.dto.AporteResponse;
 import ufersa.dev.ApiFinanca.dto.MetaRequest;
 import ufersa.dev.ApiFinanca.dto.MetaResponse;
+import ufersa.dev.ApiFinanca.model.AporteMeta;
 import ufersa.dev.ApiFinanca.model.Meta;
 import ufersa.dev.ApiFinanca.model.Usuario;
+import ufersa.dev.ApiFinanca.repository.AporteMetaRepository;
 import ufersa.dev.ApiFinanca.repository.MetaRepository;
 
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.util.List;
 import java.util.UUID;
+
+import static org.springframework.http.HttpStatus.NOT_FOUND;
 
 @Service
 @RequiredArgsConstructor
 public class MetaService {
 
     private final MetaRepository metaRepository;
+    private final AporteMetaRepository aporteMetaRepository;
 
     public MetaResponse criarMeta(MetaRequest request, Usuario usuario) {
         Meta meta = new Meta(
@@ -24,72 +34,87 @@ public class MetaService {
                 request.getDataAlvo(),
                 usuario
         );
-
         Meta metaSalva = metaRepository.save(meta);
-
-        return new MetaResponse(
-                metaSalva.getId(),
-                metaSalva.getNome(),
-                metaSalva.getValorAlvo(),
-                metaSalva.getValorAtual(),
-                metaSalva.getDataAlvo(),
-                null // progresso entra depois na #240
-        );
+        return mapToMetaResponse(metaSalva);
     }
 
-    public List<MetaResponse> listarMetas(UUID usuarioId) {
-        return metaRepository.findByUsuarioId(usuarioId)
+    public List<MetaResponse> listarMetas(Usuario usuario) {
+        return metaRepository.findByUsuarioId(usuario.getId())
                 .stream()
-                .map(meta -> new MetaResponse(
-                        meta.getId(),
-                        meta.getNome(),
-                        meta.getValorAlvo(),
-                        meta.getValorAtual(),
-                        meta.getDataAlvo(),
-                        null
-                ))
+                .map(this::mapToMetaResponse)
                 .toList();
     }
 
-    public MetaResponse buscarPorId(UUID id) {
-        Meta meta = metaRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Meta não encontrada"));
+    public MetaResponse buscarPorId(UUID id, Usuario usuario) {
+        Meta meta = metaRepository.findByIdAndUsuario(id, usuario)
+                .orElseThrow(() -> new ResponseStatusException(NOT_FOUND, "Meta não encontrada"));
+        return mapToMetaResponse(meta);
+    }
 
+    public MetaResponse atualizarMeta(UUID id, MetaRequest request, Usuario usuario) {
+        Meta meta = metaRepository.findByIdAndUsuario(id, usuario)
+                .orElseThrow(() -> new ResponseStatusException(NOT_FOUND, "Meta não encontrada"));
+        meta.setNome(request.getNome());
+        meta.setValorAlvo(request.getValorAlvo());
+        meta.setDataAlvo(request.getDataAlvo());
+        Meta metaAtualizada = metaRepository.save(meta);
+        return mapToMetaResponse(metaAtualizada);
+    }
+
+    public void excluirMeta(UUID id, Usuario usuario) {
+        Meta meta = metaRepository.findByIdAndUsuario(id, usuario)
+                .orElseThrow(() -> new ResponseStatusException(NOT_FOUND, "Meta não encontrada"));
+        metaRepository.delete(meta);
+    }
+
+    public MetaResponse adicionarAporte(UUID metaId, AporteRequest request, Usuario usuario) {
+        Meta meta = metaRepository.findByIdAndUsuario(metaId, usuario)
+                .orElseThrow(() -> new ResponseStatusException(NOT_FOUND, "Meta não encontrada"));
+        AporteMeta aporte = new AporteMeta();
+        aporte.setValor(request.valor());
+        aporte.setMeta(meta);
+        aporte.setData(request.data());
+        aporteMetaRepository.save(aporte);
+        meta.setValorAtual(meta.getValorAtual().add(request.valor()));
+        metaRepository.save(meta);
+        return mapToMetaResponse(meta);
+    }
+
+    private MetaResponse mapToMetaResponse(Meta meta) {
+        BigDecimal progresso = calcularProgresso(meta);
+        List<AporteResponse> aportesResponse = aporteMetaRepository.findByMetaId(meta.getId())
+                .stream()
+                .map(a -> new AporteResponse(a.getValor(), a.getData()))
+                .toList();
         return new MetaResponse(
                 meta.getId(),
                 meta.getNome(),
                 meta.getValorAlvo(),
                 meta.getValorAtual(),
                 meta.getDataAlvo(),
-                null
+                progresso,
+                aportesResponse
         );
     }
 
-    public MetaResponse atualizarMeta(UUID id, MetaRequest request) {
-        Meta meta = metaRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Meta não encontrada"));
-
-        meta.setNome(request.getNome());
-        meta.setValorAlvo(request.getValorAlvo());
-        meta.setDataAlvo(request.getDataAlvo());
-
-        Meta metaAtualizada = metaRepository.save(meta);
-
-        return new MetaResponse(
-                metaAtualizada.getId(),
-                metaAtualizada.getNome(),
-                metaAtualizada.getValorAlvo(),
-                metaAtualizada.getValorAtual(),
-                metaAtualizada.getDataAlvo(),
-                null
-        );
+    private BigDecimal calcularProgresso(Meta meta) {
+        if (meta.getValorAlvo() == null || meta.getValorAlvo().compareTo(BigDecimal.ZERO) == 0) {
+            return BigDecimal.ZERO;
+        }
+        return meta.getValorAtual()
+                .divide(meta.getValorAlvo(), 2, RoundingMode.HALF_UP)
+                .multiply(new BigDecimal("100"));
     }
 
-    public void excluirMeta(UUID id) {
-        Meta meta = metaRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Meta não encontrada"));
+    public BigDecimal calcularAporteMensal(Meta meta, int mesesRestantes) {
+        if (mesesRestantes <= 0) return BigDecimal.ZERO;
+        BigDecimal restante = meta.getValorAlvo().subtract(meta.getValorAtual());
+        return restante.divide(new BigDecimal(mesesRestantes), 2, RoundingMode.HALF_UP);
+    }
 
-        metaRepository.delete(meta);
+    public MetaResponse buscarMetaComAportes(UUID id, Usuario usuario) {
+        Meta meta = metaRepository.findByIdAndUsuario(id, usuario)
+                .orElseThrow(() -> new ResponseStatusException(NOT_FOUND, "Meta não encontrada"));
+        return mapToMetaResponse(meta);
     }
 }
-

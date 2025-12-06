@@ -114,5 +114,27 @@ public class AuthService {
         // saldoAtual não é retornado nos endpoints de auth
         return response;
     }
+
+    public Usuario getCurrentUserAsEntity() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        if (authentication == null
+                || !authentication.isAuthenticated()
+                || authentication.getPrincipal().equals("anonymousUser")) {
+            throw new IllegalStateException("Usuário não autenticado. Faça login novamente.");
+        }
+
+        String userIdString = authentication.getName();
+        UUID userId;
+        try {
+            userId = UUID.fromString(userIdString);
+        } catch (IllegalArgumentException ex) {
+            throw new IllegalStateException("Token inválido. Faça login novamente.");
+        }
+
+        return usuarioRepository.findById(userId)
+                .orElseThrow(() -> new IllegalStateException("Usuário não encontrado. Faça login novamente."));
+    }
+
+
 }
 
