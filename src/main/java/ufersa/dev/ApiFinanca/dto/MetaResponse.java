@@ -13,6 +13,7 @@ public record MetaResponse(
         LocalDate dataAlvo,
         BigDecimal progresso,
         List<AporteResponse> aportes,
-        boolean concluida
+        boolean concluida,
+        BigDecimal aporteMensalSugerido
 ) {
 }

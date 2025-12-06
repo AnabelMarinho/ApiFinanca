@@ -87,6 +87,7 @@ public class MetaService {
                 .map(a -> new AporteResponse(a.getValor(), a.getData()))
                 .toList();
         boolean concluida = meta.getValorAtual().compareTo(meta.getValorAlvo()) >= 0;
+        BigDecimal aporteMensalSugerido = calcularAporteMensal(meta, 12);
 
         return new MetaResponse(
                 meta.getId(),
@@ -96,7 +97,8 @@ public class MetaService {
                 meta.getDataAlvo(),
                 progresso,
                 aportesResponse,
-                concluida
+                concluida,
+                aporteMensalSugerido
         );
     }
 
@@ -114,6 +116,7 @@ public class MetaService {
     public BigDecimal calcularAporteMensal(Meta meta, int mesesRestantes) {
         if (mesesRestantes <= 0) return BigDecimal.ZERO;
         BigDecimal restante = meta.getValorAlvo().subtract(meta.getValorAtual());
+        if (restante.compareTo(BigDecimal.ZERO) <= 0) return BigDecimal.ZERO;
         return restante.divide(new BigDecimal(mesesRestantes), 2, RoundingMode.HALF_UP);
     }
 
