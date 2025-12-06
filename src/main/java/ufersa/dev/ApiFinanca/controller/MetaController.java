@@ -54,5 +54,15 @@ public class MetaController {
         return metaService.buscarMetaComAportes(id, usuarioLogado);
     }
 
+    @PutMapping("/{id}")
+    @Operation(security = @SecurityRequirement(name = "bearer-jwt"))
+    public MetaResponse atualizarMeta(
+            @PathVariable UUID id,
+            @Valid @RequestBody MetaRequest request) {
+        Usuario usuarioLogado = authService.getCurrentUserAsEntity();
+        return metaService.atualizarMeta(id, request, usuarioLogado);
+    }
+
+
 
 }
