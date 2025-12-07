@@ -14,4 +14,5 @@ public class DashboardResponse {
     private BigDecimal totalDespesas;
     private List<TransacaoResponse> transacoesRecentes;
     private List<GastoCategoria> gastosPorCategoria;
+    private List<MetaDashboard> metas;
 }
