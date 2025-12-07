@@ -5,12 +5,16 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import ufersa.dev.ApiFinanca.dto.OnboardingRequest;
 import ufersa.dev.ApiFinanca.dto.TransacaoRecorrenteOnboardingRequest;
+import ufersa.dev.ApiFinanca.model.PreferenciaAlerta;
+import ufersa.dev.ApiFinanca.model.TipoAlerta;
 import ufersa.dev.ApiFinanca.model.TipoTransacao;
 import ufersa.dev.ApiFinanca.model.Usuario;
+import ufersa.dev.ApiFinanca.repository.PreferenciaAlertaRepository;
 import ufersa.dev.ApiFinanca.repository.UsuarioRepository;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
@@ -19,11 +23,14 @@ public class OnboardingService {
 
     private final UsuarioRepository usuarioRepository;
     private final TransacaoRecorrenteService transacaoRecorrenteService;
+    private final PreferenciaAlertaRepository preferenciaAlertaRepository;
 
     public OnboardingService(UsuarioRepository usuarioRepository,
-                             TransacaoRecorrenteService transacaoRecorrenteService) {
+                             TransacaoRecorrenteService transacaoRecorrenteService,
+                             PreferenciaAlertaRepository preferenciaAlertaRepository) {
         this.usuarioRepository = usuarioRepository;
         this.transacaoRecorrenteService = transacaoRecorrenteService;
+        this.preferenciaAlertaRepository = preferenciaAlertaRepository;
     }
 
     @Transactional
@@ -94,7 +101,38 @@ public class OnboardingService {
         usuario.setSaldoInicial(saldoInicial);
         usuario.setSaldoAtual(saldoInicial);
 
-        return usuarioRepository.save(usuario);
+        Usuario usuarioSalvo = usuarioRepository.save(usuario);
+
+        // Inicializar preferências de alertas padrão para o usuário
+        inicializarPreferenciasAlertasPadrao(usuarioSalvo);
+
+        return usuarioSalvo;
+    }
+
+    /**
+     * Inicializa as preferências de alertas com os valores padrão para um novo usuário
+     */
+    private void inicializarPreferenciasAlertasPadrao(Usuario usuario) {
+        // Verificar se já existem preferências
+        List<PreferenciaAlerta> preferenciasExistentes = preferenciaAlertaRepository.findByUsuario_Id(usuario.getId());
+        
+        if (!preferenciasExistentes.isEmpty()) {
+            return; // Já tem preferências configuradas
+        }
+
+        // Criar preferências padrão para todos os tipos de alertas
+        List<PreferenciaAlerta> preferencias = new ArrayList<>();
+        
+        for (TipoAlerta tipo : TipoAlerta.values()) {
+            PreferenciaAlerta preferencia = new PreferenciaAlerta(
+                usuario,
+                tipo,
+                tipo.isAtivoPorPadrao()
+            );
+            preferencias.add(preferencia);
+        }
+
+        preferenciaAlertaRepository.saveAll(preferencias);
     }
 
     public boolean statusOnboarding(UUID usuarioId) {

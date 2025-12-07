@@ -68,8 +68,22 @@ public class SecurityConfig {
             "http://172.16.*.*:*"
         ));
         configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
-        // Adiciona o header usuarioid que é usado pelo frontend
-        configuration.setAllowedHeaders(List.of("Authorization", "Content-Type", "Accept", "usuarioid", "usuarioId"));
+        // Adiciona os headers permitidos (incluindo usuarioid que é usado pelo frontend)
+        configuration.setAllowedHeaders(List.of(
+            "Authorization", 
+            "Content-Type", 
+            "Accept", 
+            "X-Requested-With",
+            "usuarioid", 
+            "usuarioId"
+        ));
+        // Headers expostos que o frontend pode acessar
+        configuration.setExposedHeaders(List.of(
+            "Authorization",
+            "Content-Type",
+            "Access-Control-Allow-Origin",
+            "Access-Control-Allow-Credentials"
+        ));
         configuration.setAllowCredentials(true);
         configuration.setMaxAge(3600L);
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
