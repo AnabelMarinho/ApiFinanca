@@ -16,6 +16,7 @@ public class TransacaoResponse {
     private LocalDateTime data;
     private String descricao;
     private String categoria;
+    private BigDecimal porcentagem;
 
     public TransacaoResponse(Transacao t) {
         this.id = t.getId();
