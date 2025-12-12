@@ -8,11 +8,12 @@ import java.util.List;
 
 @Getter
 @Setter
-public class DashboardResponse {
-    private BigDecimal saldoAtual;
+public class RelatorioMensalResponse {
+
     private BigDecimal totalReceitas;
     private BigDecimal totalDespesas;
-    private List<TransacaoResponse> transacoesRecentes;
+    private BigDecimal saldo;
+    private List<TransacaoResponse> transacoes;
     private List<GastoCategoria> gastosPorCategoria;
-    private List<MetaDashboard> metas;
+
 }

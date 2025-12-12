@@ -11,6 +11,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.server.ResponseStatusException;
 import ufersa.dev.ApiFinanca.dto.DashboardResponse;
+import ufersa.dev.ApiFinanca.enums.PeriodoDashboard;
 import ufersa.dev.ApiFinanca.service.DashboardService;
 
 import java.util.UUID;
@@ -29,6 +30,7 @@ public class DashboardController {
     @Operation(security = @SecurityRequirement(name = "bearer-jwt"))
     public DashboardResponse getDashboard(
             @RequestParam(value = "usuarioId", required = false) UUID usuarioId,
+            @RequestParam(value = "periodo", required = false, defaultValue = "TODA_UTILIZACAO") PeriodoDashboard periodo,
             @AuthenticationPrincipal UserDetails userDetails
     ) {
         try {
@@ -40,7 +42,7 @@ public class DashboardController {
             } else {
                 throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Usuário não autenticado");
             }
-            return dashboardService.getDashboard(userId);
+            return dashboardService.getDashboard(userId, periodo);
         } catch (IllegalArgumentException ex) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "ID de usuário inválido", ex);
         } catch (RuntimeException ex) {

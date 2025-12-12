@@ -7,6 +7,7 @@ import java.math.BigDecimal;
 public class GastoCategoria {
     private String categoria;
     private BigDecimal valor;
+    private BigDecimal porcentagem;
 
     public GastoCategoria(String key, BigDecimal value) {
         this.categoria = key;

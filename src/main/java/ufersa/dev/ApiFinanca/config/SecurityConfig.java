@@ -1,5 +1,8 @@
 package ufersa.dev.ApiFinanca.config;
 
+import jakarta.servlet.http.HttpServletResponse;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
@@ -8,9 +11,13 @@ import org.springframework.security.config.annotation.authentication.configurati
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.web.AuthenticationEntryPoint;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.access.AccessDeniedHandler;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
@@ -23,7 +30,9 @@ import java.util.List;
 @EnableMethodSecurity
 public class SecurityConfig {
 
+    private static final Logger logger = LoggerFactory.getLogger(SecurityConfig.class);
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
+    
     public SecurityConfig(JwtAuthenticationFilter jwtAuthenticationFilter) {
         this.jwtAuthenticationFilter = jwtAuthenticationFilter;
     }
@@ -51,9 +60,54 @@ public class SecurityConfig {
                         .requestMatchers("/onboarding/**").authenticated()
                         .anyRequest().authenticated()
                 )
-                .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
+                .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
+                .exceptionHandling(exceptions -> exceptions
+                        .authenticationEntryPoint(authenticationEntryPoint())
+                        .accessDeniedHandler(accessDeniedHandler())
+                );
 
         return http.build();
+    }
+    
+    @Bean
+    public AuthenticationEntryPoint authenticationEntryPoint() {
+        return (request, response, authException) -> {
+            logger.error("=== 401 UNAUTHORIZED ===");
+            logger.error("Path: {}", request.getRequestURI());
+            logger.error("Method: {}", request.getMethod());
+            logger.error("Mensagem: {}", authException.getMessage());
+            logger.error("Causa: Requisição sem autenticação ou token inválido");
+            
+            Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+            logger.error("Autenticação no contexto: {}", auth != null ? "PRESENTE" : "AUSENTE");
+            
+            response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+            response.setContentType("application/json");
+            response.getWriter().write("{\"error\":\"Unauthorized\",\"message\":\"Token de autenticação ausente ou inválido\"}");
+        };
+    }
+    
+    @Bean
+    public AccessDeniedHandler accessDeniedHandler() {
+        return (request, response, accessDeniedException) -> {
+            logger.error("=== 403 FORBIDDEN ===");
+            logger.error("Path: {}", request.getRequestURI());
+            logger.error("Method: {}", request.getMethod());
+            logger.error("Mensagem: {}", accessDeniedException.getMessage());
+            
+            Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+            if (auth != null) {
+                logger.error("Autenticação presente mas sem permissão - Principal: {}", auth.getPrincipal());
+                logger.error("Authorities: {}", auth.getAuthorities());
+            } else {
+                logger.error("❌❌❌ AUTENTICAÇÃO AUSENTE - Este é o motivo do 403!");
+                logger.error("❌ O endpoint requer autenticação mas nenhuma foi encontrada no SecurityContext");
+            }
+            
+            response.setStatus(HttpServletResponse.SC_FORBIDDEN);
+            response.setContentType("application/json");
+            response.getWriter().write("{\"error\":\"Forbidden\",\"message\":\"Acesso negado. Token de autenticação necessário.\"}");
+        };
     }
 
     @Bean
@@ -68,8 +122,22 @@ public class SecurityConfig {
             "http://172.16.*.*:*"
         ));
         configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
-        // Adiciona o header usuarioid que é usado pelo frontend
-        configuration.setAllowedHeaders(List.of("Authorization", "Content-Type", "Accept", "usuarioid", "usuarioId"));
+        // Adiciona os headers permitidos (incluindo usuarioid que é usado pelo frontend)
+        configuration.setAllowedHeaders(List.of(
+            "Authorization", 
+            "Content-Type", 
+            "Accept", 
+            "X-Requested-With",
+            "usuarioid", 
+            "usuarioId"
+        ));
+        // Headers expostos que o frontend pode acessar
+        configuration.setExposedHeaders(List.of(
+            "Authorization",
+            "Content-Type",
+            "Access-Control-Allow-Origin",
+            "Access-Control-Allow-Credentials"
+        ));
         configuration.setAllowCredentials(true);
         configuration.setMaxAge(3600L);
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
