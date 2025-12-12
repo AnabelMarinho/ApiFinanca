@@ -12,6 +12,7 @@ import ufersa.dev.ApiFinanca.model.Meta;
 import ufersa.dev.ApiFinanca.model.Usuario;
 import ufersa.dev.ApiFinanca.repository.AporteMetaRepository;
 import ufersa.dev.ApiFinanca.repository.MetaRepository;
+import ufersa.dev.ApiFinanca.repository.UsuarioRepository;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
@@ -19,6 +20,8 @@ import java.util.List;
 import java.util.UUID;
 
 import static org.springframework.http.HttpStatus.NOT_FOUND;
+import jakarta.transaction.Transactional;
+import org.springframework.http.HttpStatus;
 
 @Service
 @RequiredArgsConstructor
@@ -26,6 +29,7 @@ public class MetaService {
 
     private final MetaRepository metaRepository;
     private final AporteMetaRepository aporteMetaRepository;
+    private final UsuarioRepository usuarioRepository;
 
     public MetaResponse criarMeta(MetaRequest request, Usuario usuario) {
         Meta meta = new Meta(
@@ -67,16 +71,83 @@ public class MetaService {
         metaRepository.delete(meta);
     }
 
+    @Transactional
     public MetaResponse adicionarAporte(UUID metaId, AporteRequest request, Usuario usuario) {
-        Meta meta = metaRepository.findByIdAndUsuario(metaId, usuario)
+        // Validar valor do aporte
+        if (request.valor() == null || request.valor().compareTo(BigDecimal.ZERO) <= 0) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "O valor do aporte deve ser maior que zero");
+        }
+        
+        // Buscar usuário completo do banco
+        Usuario usuarioCompleto = usuarioRepository.findById(usuario.getId())
+                .orElseThrow(() -> new ResponseStatusException(NOT_FOUND, "Usuário não encontrado"));
+        
+        // Verificar se o usuário tem saldo suficiente
+        if (usuarioCompleto.getSaldoAtual().compareTo(request.valor()) < 0) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, 
+                "Saldo insuficiente. Saldo atual: " + usuarioCompleto.getSaldoAtual() + 
+                ", valor do aporte: " + request.valor());
+        }
+        
+        // Buscar meta
+        Meta meta = metaRepository.findByIdAndUsuario(metaId, usuarioCompleto)
                 .orElseThrow(() -> new ResponseStatusException(NOT_FOUND, "Meta não encontrada"));
+        
+        // Criar e salvar aporte
         AporteMeta aporte = new AporteMeta();
         aporte.setValor(request.valor());
         aporte.setMeta(meta);
         aporte.setData(request.data());
         aporteMetaRepository.save(aporte);
+        
+        // Atualizar valor atual da meta
         meta.setValorAtual(meta.getValorAtual().add(request.valor()));
         metaRepository.save(meta);
+        
+        // Subtrair do saldo do usuário
+        usuarioCompleto.setSaldoAtual(usuarioCompleto.getSaldoAtual().subtract(request.valor()));
+        usuarioRepository.save(usuarioCompleto);
+        
+        return mapToMetaResponse(meta);
+    }
+
+    @Transactional
+    public MetaResponse removerAporte(UUID metaId, AporteRequest request, Usuario usuario ) {
+        // Validar valor da remoção
+        if (request.valor() == null || request.valor().compareTo(BigDecimal.ZERO) <= 0) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "O valor da remoção deve ser maior que zero");
+        }
+        
+        // Buscar usuário completo do banco
+        Usuario usuarioCompleto = usuarioRepository.findById(usuario.getId())
+                .orElseThrow(() -> new ResponseStatusException(NOT_FOUND, "Usuário não encontrado"));
+        
+        // Buscar meta
+        Meta meta = metaRepository.findByIdAndUsuario(metaId, usuarioCompleto)
+                .orElseThrow(() -> new ResponseStatusException(NOT_FOUND, "Meta não encontrada"));
+        
+        // Verificar se a meta tem saldo suficiente para remoção
+        if (meta.getValorAtual().compareTo(request.valor()) < 0) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, 
+                "Valor insuficiente na meta. Valor atual da meta: " + meta.getValorAtual() + 
+                ", valor solicitado para remoção: " + request.valor());
+        }
+        
+        // Criar e salvar aporte negativo (para histórico)
+        AporteMeta aporteReverso = new AporteMeta();
+        aporteReverso.setValor(request.valor().negate()); // Valor negativo
+        aporteReverso.setMeta(meta);
+        aporteReverso.setData(request.data());
+        aporteMetaRepository.save(aporteReverso);
+        
+        // Subtrair do valor atual da meta
+        meta.setValorAtual(meta.getValorAtual().subtract(request.valor()));
+        metaRepository.save(meta);
+        
+        // Adicionar ao saldo do usuário
+        usuarioCompleto.setSaldoAtual(usuarioCompleto.getSaldoAtual().add(request.valor()));
+        usuarioRepository.save(usuarioCompleto);
+        
         return mapToMetaResponse(meta);
     }
 

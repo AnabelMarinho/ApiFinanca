@@ -81,4 +81,14 @@ public class MetaController {
         return metaService.adicionarAporte(id, request, usuarioLogado);
     }
 
+    @DeleteMapping("/{id}/aportes")
+    @ResponseStatus(HttpStatus.OK)
+    @Operation(security = @SecurityRequirement(name = "bearer-jwt"))
+    public MetaResponse removerAporte(
+            @PathVariable UUID id,
+            @Valid @RequestBody AporteRequest request) {
+        Usuario usuarioLogado = authService.getCurrentUserAsEntity();
+        return metaService.removerAporte(id, request, usuarioLogado);
+    }
+
 }
