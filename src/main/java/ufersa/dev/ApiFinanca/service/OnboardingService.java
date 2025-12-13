@@ -13,6 +13,7 @@ import ufersa.dev.ApiFinanca.repository.PreferenciaAlertaRepository;
 import ufersa.dev.ApiFinanca.repository.UsuarioRepository;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -64,10 +65,11 @@ public class OnboardingService {
         if (request.getDataInicioControle() == null) {
             throw new IllegalArgumentException("A data de início do controle financeiro é obrigatória.");
         }
-        int diaDoMes = request.getDataInicioControle().getDayOfMonth();
-        if (diaDoMes > 28) {
-            throw new IllegalArgumentException("O dia de início do controle deve estar entre 1 e 28.");
-        }
+        
+        // Ajusta a data para garantir que o dia existe no mês informado
+        // Se o dia não existir (ex: 31 em fevereiro), ajusta para o último dia do mês
+        LocalDate dataInicioControle = ajustarDataParaUltimoDiaDoMesSeNecessario(request.getDataInicioControle());
+        int diaDoMes = dataInicioControle.getDayOfMonth();
 
         List<TransacaoRecorrenteOnboardingRequest> lista = request.getTransacoesRecorrentes();
         if (lista != null && !lista.isEmpty()) {
@@ -92,7 +94,7 @@ public class OnboardingService {
             }
         }
 
-        usuario.setDataInicioControle(request.getDataInicioControle());
+        usuario.setDataInicioControle(dataInicioControle);
         usuario.setPrimeiroAcesso(false);
         usuario.setDataAtualizacao(LocalDateTime.now());
         
@@ -140,6 +142,26 @@ public class OnboardingService {
                 .orElseThrow(() -> new EntityNotFoundException("Usuário não encontrado com o ID informado."));
 
         return !Boolean.TRUE.equals(usuario.getPrimeiroAcesso());
+    }
+
+    /**
+     * Ajusta a data para garantir que o dia existe no mês informado.
+     * Se o dia não existir no mês (ex: 31 em fevereiro), ajusta para o último dia válido do mês.
+     * 
+     * @param dataOriginal A data original informada pelo usuário
+     * @return A data ajustada (mesma data se válida, ou último dia do mês se o dia não existir)
+     */
+    private LocalDate ajustarDataParaUltimoDiaDoMesSeNecessario(LocalDate dataOriginal) {
+        int diaDesejado = dataOriginal.getDayOfMonth();
+        int ultimoDiaDoMes = dataOriginal.lengthOfMonth();
+        
+        // Se o dia desejado existe no mês, retorna a data original
+        if (diaDesejado <= ultimoDiaDoMes) {
+            return dataOriginal;
+        }
+        
+        // Se o dia não existe no mês, ajusta para o último dia válido
+        return LocalDate.of(dataOriginal.getYear(), dataOriginal.getMonth(), ultimoDiaDoMes);
     }
 
 }
