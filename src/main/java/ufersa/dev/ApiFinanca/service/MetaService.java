@@ -65,9 +65,29 @@ public class MetaService {
         return mapToMetaResponse(metaAtualizada);
     }
 
+    @Transactional
     public void excluirMeta(UUID id, Usuario usuario) {
-        Meta meta = metaRepository.findByIdAndUsuario(id, usuario)
+        // Buscar usuário completo do banco para garantir que temos os dados atualizados
+        Usuario usuarioCompleto = usuarioRepository.findById(usuario.getId())
+                .orElseThrow(() -> new ResponseStatusException(NOT_FOUND, "Usuário não encontrado"));
+        
+        // Buscar meta
+        Meta meta = metaRepository.findByIdAndUsuario(id, usuarioCompleto)
                 .orElseThrow(() -> new ResponseStatusException(NOT_FOUND, "Meta não encontrada"));
+        
+        // Se a meta tiver valorAtual, transferir para o saldoAtual do usuário
+        if (meta.getValorAtual() != null && meta.getValorAtual().compareTo(BigDecimal.ZERO) > 0) {
+            BigDecimal valorAtualMeta = meta.getValorAtual();
+            BigDecimal saldoAtualUsuario = usuarioCompleto.getSaldoAtual() != null 
+                    ? usuarioCompleto.getSaldoAtual() 
+                    : BigDecimal.ZERO;
+            
+            // Adicionar o valor da meta ao saldo do usuário
+            usuarioCompleto.setSaldoAtual(saldoAtualUsuario.add(valorAtualMeta));
+            usuarioRepository.save(usuarioCompleto);
+        }
+        
+        // Excluir a meta
         metaRepository.delete(meta);
     }
 
