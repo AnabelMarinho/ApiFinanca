@@ -55,8 +55,25 @@ public class TransacaoService {
     public Transacao update(UUID id, TransacaoRequest request) {
         Transacao transacao = transacaoRepository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("Transação não encontrada com o ID informado."));
+        
+        // Verifica se a transação é de uma categoria de meta (não pode ser atualizada)
+        if (isCategoriaMeta(transacao.getCategoria())) {
+            throw new IllegalArgumentException("Transações de aporte ou saque de meta não podem ser atualizadas.");
+        }
+        
         Usuario usuarioAntigo = transacao.getUser();
         applyRequestToEntity(request, transacao);
+        
+        // Verifica se a nova categoria também é de meta
+        UUID categoriaId = request.getCategoriaId();
+        if (categoriaId != null) {
+            Categoria novaCategoria = categoriaRepository.findById(categoriaId)
+                    .orElseThrow(() -> new EntityNotFoundException("Categoria não encontrada com o ID informado."));
+            if (isCategoriaMeta(novaCategoria)) {
+                throw new IllegalArgumentException("Não é permitido alterar uma transação para categoria de meta.");
+            }
+        }
+        
         Transacao saved = transacaoRepository.save(transacao);
         transacaoRepository.flush(); // Garante que a transação seja persistida antes de recalcular o saldo
         
@@ -75,6 +92,12 @@ public class TransacaoService {
     public void delete(UUID id) {
         Transacao transacao = transacaoRepository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("Transação não encontrada com o ID informado."));
+        
+        // Verifica se a transação é de uma categoria de meta (não pode ser deletada)
+        if (isCategoriaMeta(transacao.getCategoria())) {
+            throw new IllegalArgumentException("Transações de aporte ou saque de meta não podem ser deletadas.");
+        }
+        
         Usuario usuario = transacao.getUser();
         transacaoRepository.deleteById(id);
         transacaoRepository.flush(); // Garante que a transação seja deletada antes de recalcular o saldo
@@ -182,6 +205,18 @@ public class TransacaoService {
         
         usuarioCompleto.setSaldoAtual(novoSaldo);
         usuarioRepository.save(usuarioCompleto);
+    }
+
+    /**
+     * Verifica se uma categoria é uma das categorias de meta (Aporte de Meta ou Saque de Meta).
+     * Essas categorias são protegidas e suas transações não podem ser atualizadas ou deletadas.
+     */
+    private boolean isCategoriaMeta(Categoria categoria) {
+        if (categoria == null || categoria.getNome() == null) {
+            return false;
+        }
+        String nomeCategoria = categoria.getNome();
+        return "Aporte de Meta".equals(nomeCategoria) || "Saque de Meta".equals(nomeCategoria);
     }
 }
 

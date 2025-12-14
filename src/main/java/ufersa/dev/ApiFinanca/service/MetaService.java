@@ -8,14 +8,20 @@ import ufersa.dev.ApiFinanca.dto.AporteResponse;
 import ufersa.dev.ApiFinanca.dto.MetaRequest;
 import ufersa.dev.ApiFinanca.dto.MetaResponse;
 import ufersa.dev.ApiFinanca.model.AporteMeta;
+import ufersa.dev.ApiFinanca.model.Categoria;
 import ufersa.dev.ApiFinanca.model.Meta;
+import ufersa.dev.ApiFinanca.model.TipoTransacao;
+import ufersa.dev.ApiFinanca.model.Transacao;
 import ufersa.dev.ApiFinanca.model.Usuario;
 import ufersa.dev.ApiFinanca.repository.AporteMetaRepository;
+import ufersa.dev.ApiFinanca.repository.CategoriaRepository;
 import ufersa.dev.ApiFinanca.repository.MetaRepository;
+import ufersa.dev.ApiFinanca.repository.TransacaoRepository;
 import ufersa.dev.ApiFinanca.repository.UsuarioRepository;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.time.LocalDate;
 import java.util.List;
 import java.util.UUID;
 
@@ -30,6 +36,8 @@ public class MetaService {
     private final MetaRepository metaRepository;
     private final AporteMetaRepository aporteMetaRepository;
     private final UsuarioRepository usuarioRepository;
+    private final CategoriaRepository categoriaRepository;
+    private final TransacaoRepository transacaoRepository;
 
     public MetaResponse criarMeta(MetaRequest request, Usuario usuario) {
         Meta meta = new Meta(
@@ -121,6 +129,9 @@ public class MetaService {
         usuarioCompleto.setSaldoAtual(usuarioCompleto.getSaldoAtual().subtract(request.valor()));
         usuarioRepository.save(usuarioCompleto);
         
+        // Criar transação de despesa automaticamente com categoria "Aporte de Meta"
+        criarTransacaoAporte(usuarioCompleto, request.valor(), request.data(), meta.getNome());
+        
         return mapToMetaResponse(meta);
     }
 
@@ -160,6 +171,9 @@ public class MetaService {
         // Adicionar ao saldo do usuário
         usuarioCompleto.setSaldoAtual(usuarioCompleto.getSaldoAtual().add(request.valor()));
         usuarioRepository.save(usuarioCompleto);
+        
+        // Criar transação de receita automaticamente com categoria "Saque de Meta"
+        criarTransacaoSaque(usuarioCompleto, request.valor(), request.data(), meta.getNome());
         
         return mapToMetaResponse(meta);
     }
@@ -208,5 +222,69 @@ public class MetaService {
         Meta meta = metaRepository.findByIdAndUsuario(id, usuario)
                 .orElseThrow(() -> new ResponseStatusException(NOT_FOUND, "Meta não encontrada"));
         return mapToMetaResponse(meta);
+    }
+
+    /**
+     * Busca ou cria a categoria "Aporte de Meta" (categoria padrão do sistema)
+     */
+    private Categoria buscarOuCriarCategoriaAporte() {
+        return categoriaRepository.findByNomeAndTipoAndUserIsNull("Aporte de Meta", TipoTransacao.DESPESA)
+                .orElseGet(() -> {
+                    Categoria categoria = new Categoria();
+                    categoria.setNome("Aporte de Meta");
+                    categoria.setTipo(TipoTransacao.DESPESA);
+                    categoria.setUser(null); // Categoria padrão do sistema
+                    return categoriaRepository.save(categoria);
+                });
+    }
+
+    /**
+     * Busca ou cria a categoria "Saque de Meta" (categoria padrão do sistema)
+     */
+    private Categoria buscarOuCriarCategoriaSaque() {
+        return categoriaRepository.findByNomeAndTipoAndUserIsNull("Saque de Meta", TipoTransacao.RECEITA)
+                .orElseGet(() -> {
+                    Categoria categoria = new Categoria();
+                    categoria.setNome("Saque de Meta");
+                    categoria.setTipo(TipoTransacao.RECEITA);
+                    categoria.setUser(null); // Categoria padrão do sistema
+                    return categoriaRepository.save(categoria);
+                });
+    }
+
+    /**
+     * Cria uma transação de despesa para registro de aporte em meta.
+     * Não atualiza o saldo do usuário, pois isso já foi feito no método adicionarAporte.
+     */
+    private void criarTransacaoAporte(Usuario usuario, BigDecimal valor, LocalDate data, String nomeMeta) {
+        Categoria categoria = buscarOuCriarCategoriaAporte();
+        
+        Transacao transacao = new Transacao();
+        transacao.setUser(usuario);
+        transacao.setCategoria(categoria);
+        transacao.setTipo(TipoTransacao.DESPESA);
+        transacao.setValor(valor);
+        transacao.setData(data.atStartOfDay());
+        transacao.setDescricao("Aporte para meta: " + nomeMeta);
+        
+        transacaoRepository.save(transacao);
+    }
+
+    /**
+     * Cria uma transação de receita para registro de saque de meta.
+     * Não atualiza o saldo do usuário, pois isso já foi feito no método removerAporte.
+     */
+    private void criarTransacaoSaque(Usuario usuario, BigDecimal valor, LocalDate data, String nomeMeta) {
+        Categoria categoria = buscarOuCriarCategoriaSaque();
+        
+        Transacao transacao = new Transacao();
+        transacao.setUser(usuario);
+        transacao.setCategoria(categoria);
+        transacao.setTipo(TipoTransacao.RECEITA);
+        transacao.setValor(valor);
+        transacao.setData(data.atStartOfDay());
+        transacao.setDescricao("Saque da meta: " + nomeMeta);
+        
+        transacaoRepository.save(transacao);
     }
 }
