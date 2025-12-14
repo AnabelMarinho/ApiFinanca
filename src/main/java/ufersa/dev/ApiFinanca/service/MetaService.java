@@ -22,6 +22,8 @@ import ufersa.dev.ApiFinanca.repository.UsuarioRepository;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.List;
 import java.util.UUID;
 
@@ -84,8 +86,8 @@ public class MetaService {
                 .orElseThrow(() -> new ResponseStatusException(NOT_FOUND, "Meta não encontrada"));
         
         // Se a meta tiver valorAtual, transferir para o saldoAtual do usuário
-        if (meta.getValorAtual() != null && meta.getValorAtual().compareTo(BigDecimal.ZERO) > 0) {
-            BigDecimal valorAtualMeta = meta.getValorAtual();
+        BigDecimal valorAtualMeta = meta.getValorAtual() != null ? meta.getValorAtual() : BigDecimal.ZERO;
+        if (valorAtualMeta.compareTo(BigDecimal.ZERO) > 0) {
             BigDecimal saldoAtualUsuario = usuarioCompleto.getSaldoAtual() != null 
                     ? usuarioCompleto.getSaldoAtual() 
                     : BigDecimal.ZERO;
@@ -93,6 +95,9 @@ public class MetaService {
             // Adicionar o valor da meta ao saldo do usuário
             usuarioCompleto.setSaldoAtual(saldoAtualUsuario.add(valorAtualMeta));
             usuarioRepository.save(usuarioCompleto);
+            
+            // Criar transação de receita automaticamente com categoria "Saque de Meta"
+            criarTransacaoSaque(usuarioCompleto, valorAtualMeta, LocalDate.now(), meta.getNome());
         }
         
         // Excluir a meta
@@ -264,7 +269,8 @@ public class MetaService {
         transacao.setCategoria(categoria);
         transacao.setTipo(TipoTransacao.DESPESA);
         transacao.setValor(valor);
-        transacao.setData(data.atStartOfDay());
+        // Usa o horário atual de Brasília
+        transacao.setData(LocalDateTime.now(ZoneId.of("America/Sao_Paulo")));
         transacao.setDescricao("Aporte para meta: " + nomeMeta);
         
         transacaoRepository.save(transacao);
@@ -272,7 +278,7 @@ public class MetaService {
 
     /**
      * Cria uma transação de receita para registro de saque de meta.
-     * Não atualiza o saldo do usuário, pois isso já foi feito no método removerAporte.
+     * Não atualiza o saldo do usuário, pois isso já foi feito no método removerAporte ou excluirMeta.
      */
     private void criarTransacaoSaque(Usuario usuario, BigDecimal valor, LocalDate data, String nomeMeta) {
         Categoria categoria = buscarOuCriarCategoriaSaque();
@@ -282,7 +288,8 @@ public class MetaService {
         transacao.setCategoria(categoria);
         transacao.setTipo(TipoTransacao.RECEITA);
         transacao.setValor(valor);
-        transacao.setData(data.atStartOfDay());
+        // Usa o horário atual de Brasília
+        transacao.setData(LocalDateTime.now(ZoneId.of("America/Sao_Paulo")));
         transacao.setDescricao("Saque da meta: " + nomeMeta);
         
         transacaoRepository.save(transacao);
