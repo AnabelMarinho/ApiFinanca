@@ -108,6 +108,15 @@ public class OnboardingService {
         // Inicializar preferências de alertas padrão para o usuário
         inicializarPreferenciasAlertasPadrao(usuarioSalvo);
 
+        // Verifica e processa transações recorrentes pendentes do usuário para o dia atual
+        // Se o usuário criou transações recorrentes para hoje no onboarding, elas serão processadas imediatamente
+        try {
+            transacaoRecorrenteService.processarRecorrenciasPendentesDoUsuario(usuarioSalvo);
+        } catch (Exception ex) {
+            // Log do erro mas não impede o onboarding
+            // A transação recorrente será processada no próximo scheduler
+        }
+
         return usuarioSalvo;
     }
 

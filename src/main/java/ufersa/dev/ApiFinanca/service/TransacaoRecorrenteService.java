@@ -50,10 +50,21 @@ public class TransacaoRecorrenteService {
         return transacaoRecorrenteRepository.findById(id);
     }
 
+    @Transactional
     public TransacaoRecorrente save(TransacaoRecorrenteRequest request) {
         TransacaoRecorrente transacaoRecorrente = new TransacaoRecorrente();
         applyRequestToEntity(request, transacaoRecorrente);
-        return transacaoRecorrenteRepository.save(transacaoRecorrente);
+        TransacaoRecorrente salva = transacaoRecorrenteRepository.save(transacaoRecorrente);
+        
+        // Se a transação recorrente criada é para o dia atual e está ativa, processa imediatamente
+        if (salva.isAtiva()) {
+            LocalDate hoje = LocalDate.now();
+            if (deveExecutarHoje(salva, hoje)) {
+                processarRecorrencia(salva, hoje);
+            }
+        }
+        
+        return salva;
     }
 
     public TransacaoRecorrente update(UUID id, TransacaoRecorrenteRequest request) {
@@ -127,7 +138,27 @@ public class TransacaoRecorrenteService {
         }
     }
 
+    /**
+     * Processa recorrências pendentes de um usuário específico para o dia atual.
+     * Útil para verificar e executar transações recorrentes quando o usuário faz login,
+     * completa onboarding ou cria uma nova transação recorrente.
+     * 
+     * @param usuario O usuário para verificar recorrências pendentes
+     */
+    @Transactional
+    public void processarRecorrenciasPendentesDoUsuario(Usuario usuario) {
+        LocalDate hoje = LocalDate.now();
+        List<TransacaoRecorrente> recorrentes = transacaoRecorrenteRepository.findByUserAndAtivaTrue(usuario);
+        
+        for (TransacaoRecorrente recorrente : recorrentes) {
+            if (deveExecutarHoje(recorrente, hoje)) {
+                processarRecorrencia(recorrente, hoje);
+            }
+        }
+    }
+
     private void processarRecorrencia(TransacaoRecorrente recorrente, LocalDate dataReferencia) {
+        // PRIMEIRA VERIFICAÇÃO: Verifica se já foi processada hoje (otimização rápida)
         if (transacaoRecorrenteExecucaoRepository
                 .existsByTransacaoRecorrenteAndDataExecucao(recorrente, dataReferencia)) {
             log.debug("Recorrência {} já processada em {}", recorrente.getId(), dataReferencia);
@@ -135,16 +166,76 @@ public class TransacaoRecorrenteService {
         }
 
         try {
+            // SEGUNDA VERIFICAÇÃO: Verifica novamente antes de processar (proteção contra race condition)
+            // Isso garante que mesmo se duas threads passarem pela primeira verificação,
+            // apenas uma vai processar
+            if (transacaoRecorrenteExecucaoRepository
+                    .existsByTransacaoRecorrenteAndDataExecucao(recorrente, dataReferencia)) {
+                log.debug("Recorrência {} já processada em {} (verificação dupla)", 
+                        recorrente.getId(), dataReferencia);
+                return;
+            }
+            
+            // Cria a transação automatica (com verificação interna de duplicação)
             criarTransacaoAutomatica(recorrente, dataReferencia);
+            
+            // TERCEIRA VERIFICAÇÃO: Verifica uma última vez antes de registrar execução
+            // Se outra thread processou entre criar a transação e registrar execução
+            if (transacaoRecorrenteExecucaoRepository
+                    .existsByTransacaoRecorrenteAndDataExecucao(recorrente, dataReferencia)) {
+                log.debug("Execução já registrada para recorrência {} em {} (outra thread processou)", 
+                        recorrente.getId(), dataReferencia);
+                return;
+            }
+            
+            // Registra a execução com sucesso
+            // A constraint única no banco garante que não haverá duplicação mesmo em race conditions
             registrarExecucao(recorrente, dataReferencia, TransacaoRecorrenteExecucaoStatus.SUCESSO, null);
             log.info("Transação recorrente {} executada com sucesso em {}", recorrente.getId(), dataReferencia);
+            
+        } catch (org.springframework.dao.DataIntegrityViolationException ex) {
+            // Constraint unique violation ao registrar execução - outra thread já processou
+            log.debug("Execução já registrada para recorrência {} em {} (constraint violation - outra thread processou)", 
+                    recorrente.getId(), dataReferencia);
+            // Não precisa fazer nada, já foi processada por outra thread
         } catch (Exception ex) {
             log.error("Falha ao processar transação recorrente {} em {}", recorrente.getId(), dataReferencia, ex);
-            registrarExecucao(recorrente, dataReferencia, TransacaoRecorrenteExecucaoStatus.FALHA, ex.getMessage());
+            // Tenta registrar como falha, mas se já existir execução (outra thread processou), ignora
+            try {
+                // Verifica novamente antes de registrar falha
+                if (!transacaoRecorrenteExecucaoRepository
+                        .existsByTransacaoRecorrenteAndDataExecucao(recorrente, dataReferencia)) {
+                    registrarExecucao(recorrente, dataReferencia, TransacaoRecorrenteExecucaoStatus.FALHA, ex.getMessage());
+                } else {
+                    log.debug("Execução já registrada para recorrência {} em {} (outra thread processou)", 
+                            recorrente.getId(), dataReferencia);
+                }
+            } catch (org.springframework.dao.DataIntegrityViolationException e) {
+                // Já existe execução (provavelmente outra thread processou com sucesso)
+                log.debug("Execução já registrada para recorrência {} em {} (constraint violation)", 
+                        recorrente.getId(), dataReferencia);
+            }
         }
     }
 
     private void criarTransacaoAutomatica(TransacaoRecorrente recorrente, LocalDate dataExecucao) {
+        // Verificação adicional para evitar duplicação em race conditions
+        // Verifica se já existe uma transação com as mesmas características criada hoje
+        boolean jaExiste = transacaoRepository.existsTransacaoSimilar(
+            recorrente.getUser(),
+            recorrente.getCategoria(),
+            recorrente.getTipo(),
+            recorrente.getValor(),
+            recorrente.getDescricao(),
+            dataExecucao
+        );
+        
+        if (jaExiste) {
+            log.debug("Transação similar já existe para recorrência {} em {}. Pulando criação.", 
+                    recorrente.getId(), dataExecucao);
+            return;
+        }
+        
         Transacao transacao = new Transacao();
         transacao.setUser(recorrente.getUser());
         transacao.setCategoria(recorrente.getCategoria());

@@ -14,6 +14,7 @@ import ufersa.dev.ApiFinanca.dto.auth.AuthResponse;
 import ufersa.dev.ApiFinanca.model.Usuario;
 import ufersa.dev.ApiFinanca.repository.UsuarioRepository;
 import ufersa.dev.ApiFinanca.security.JwtService;
+import ufersa.dev.ApiFinanca.service.TransacaoRecorrenteService;
 
 import java.util.Optional;
 import java.util.UUID;
@@ -25,17 +26,20 @@ public class AuthService {
     private final PasswordEncoder passwordEncoder;
     private final AuthenticationManager authenticationManager;
     private final JwtService jwtService;
+    private final TransacaoRecorrenteService transacaoRecorrenteService;
 
     public AuthService(
             UsuarioRepository usuarioRepository,
             PasswordEncoder passwordEncoder,
             AuthenticationManager authenticationManager,
-            JwtService jwtService
+            JwtService jwtService,
+            TransacaoRecorrenteService transacaoRecorrenteService
     ) {
         this.usuarioRepository = usuarioRepository;
         this.passwordEncoder = passwordEncoder;
         this.authenticationManager = authenticationManager;
         this.jwtService = jwtService;
+        this.transacaoRecorrenteService = transacaoRecorrenteService;
     }
 
     @Transactional
@@ -67,6 +71,14 @@ public class AuthService {
             UUID userId = UUID.fromString(authentication.getName());
             Usuario usuario = usuarioRepository.findById(userId)
                     .orElseThrow(() -> new IllegalArgumentException("Email ou senha incorretos"));
+
+            // Verifica e processa transações recorrentes pendentes do usuário para o dia atual
+            try {
+                transacaoRecorrenteService.processarRecorrenciasPendentesDoUsuario(usuario);
+            } catch (Exception ex) {
+                // Log do erro mas não impede o login
+                // A transação recorrente será processada no próximo scheduler
+            }
 
             String token = jwtService.generateToken(usuario.getId().toString());
             return new AuthResponse(token, mapToUsuarioResponse(usuario),
