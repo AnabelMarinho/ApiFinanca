@@ -102,13 +102,6 @@ public class MetaService {
         Usuario usuarioCompleto = usuarioRepository.findById(usuario.getId())
                 .orElseThrow(() -> new ResponseStatusException(NOT_FOUND, "Usuário não encontrado"));
         
-        // Verificar se o usuário tem saldo suficiente
-        if (usuarioCompleto.getSaldoAtual().compareTo(request.valor()) < 0) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, 
-                "Saldo insuficiente. Saldo atual: " + usuarioCompleto.getSaldoAtual() + 
-                ", valor do aporte: " + request.valor());
-        }
-        
         // Buscar meta
         Meta meta = metaRepository.findByIdAndUsuario(metaId, usuarioCompleto)
                 .orElseThrow(() -> new ResponseStatusException(NOT_FOUND, "Meta não encontrada"));
