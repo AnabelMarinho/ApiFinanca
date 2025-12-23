@@ -74,5 +74,17 @@ public interface TransacaoRepository extends JpaRepository<Transacao, UUID> {
     @Query(value = "DELETE FROM transacoes WHERE user_id = :userId", nativeQuery = true)
     void deleteAllByUserId(@Param("userId") UUID userId);
 
+    // Verificar se já existe transação com características similares criada hoje
+    // Usado para evitar duplicação em race conditions ao processar recorrências
+    @Query("SELECT COUNT(t) > 0 FROM Transacao t WHERE t.user = :user AND t.categoria = :categoria " +
+           "AND t.tipo = :tipo AND t.valor = :valor AND t.descricao = :descricao " +
+           "AND FUNCTION('DATE', t.data) = :data")
+    boolean existsTransacaoSimilar(@Param("user") Usuario user, 
+                                   @Param("categoria") Categoria categoria,
+                                   @Param("tipo") TipoTransacao tipo,
+                                   @Param("valor") BigDecimal valor,
+                                   @Param("descricao") String descricao,
+                                   @Param("data") LocalDate data);
+
 }
 

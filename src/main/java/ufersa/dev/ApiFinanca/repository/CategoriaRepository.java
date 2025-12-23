@@ -41,5 +41,8 @@ public interface CategoriaRepository extends JpaRepository<Categoria, UUID> {
     // Buscar categoria por nome e tipo para um usuário específico
     Optional<Categoria> findByNomeAndTipoAndUser(String nome, TipoTransacao tipo, Usuario user);
 
+    // Buscar categoria padrão por nome e tipo (user = null)
+    Optional<Categoria> findByNomeAndTipoAndUserIsNull(String nome, TipoTransacao tipo);
+
 }
 

@@ -8,17 +8,28 @@ import ufersa.dev.ApiFinanca.dto.AporteResponse;
 import ufersa.dev.ApiFinanca.dto.MetaRequest;
 import ufersa.dev.ApiFinanca.dto.MetaResponse;
 import ufersa.dev.ApiFinanca.model.AporteMeta;
+import ufersa.dev.ApiFinanca.model.Categoria;
 import ufersa.dev.ApiFinanca.model.Meta;
+import ufersa.dev.ApiFinanca.model.TipoTransacao;
+import ufersa.dev.ApiFinanca.model.Transacao;
 import ufersa.dev.ApiFinanca.model.Usuario;
 import ufersa.dev.ApiFinanca.repository.AporteMetaRepository;
+import ufersa.dev.ApiFinanca.repository.CategoriaRepository;
 import ufersa.dev.ApiFinanca.repository.MetaRepository;
+import ufersa.dev.ApiFinanca.repository.TransacaoRepository;
+import ufersa.dev.ApiFinanca.repository.UsuarioRepository;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.List;
 import java.util.UUID;
 
 import static org.springframework.http.HttpStatus.NOT_FOUND;
+import jakarta.transaction.Transactional;
+import org.springframework.http.HttpStatus;
 
 @Service
 @RequiredArgsConstructor
@@ -26,6 +37,9 @@ public class MetaService {
 
     private final MetaRepository metaRepository;
     private final AporteMetaRepository aporteMetaRepository;
+    private final UsuarioRepository usuarioRepository;
+    private final CategoriaRepository categoriaRepository;
+    private final TransacaoRepository transacaoRepository;
 
     public MetaResponse criarMeta(MetaRequest request, Usuario usuario) {
         Meta meta = new Meta(
@@ -61,22 +75,111 @@ public class MetaService {
         return mapToMetaResponse(metaAtualizada);
     }
 
+    @Transactional
     public void excluirMeta(UUID id, Usuario usuario) {
-        Meta meta = metaRepository.findByIdAndUsuario(id, usuario)
+        // Buscar usuário completo do banco para garantir que temos os dados atualizados
+        Usuario usuarioCompleto = usuarioRepository.findById(usuario.getId())
+                .orElseThrow(() -> new ResponseStatusException(NOT_FOUND, "Usuário não encontrado"));
+        
+        // Buscar meta
+        Meta meta = metaRepository.findByIdAndUsuario(id, usuarioCompleto)
                 .orElseThrow(() -> new ResponseStatusException(NOT_FOUND, "Meta não encontrada"));
+        
+        // Se a meta tiver valorAtual, transferir para o saldoAtual do usuário
+        BigDecimal valorAtualMeta = meta.getValorAtual() != null ? meta.getValorAtual() : BigDecimal.ZERO;
+        if (valorAtualMeta.compareTo(BigDecimal.ZERO) > 0) {
+            BigDecimal saldoAtualUsuario = usuarioCompleto.getSaldoAtual() != null 
+                    ? usuarioCompleto.getSaldoAtual() 
+                    : BigDecimal.ZERO;
+            
+            // Adicionar o valor da meta ao saldo do usuário
+            usuarioCompleto.setSaldoAtual(saldoAtualUsuario.add(valorAtualMeta));
+            usuarioRepository.save(usuarioCompleto);
+            
+            // Criar transação de receita automaticamente com categoria "Saque de Meta"
+            criarTransacaoSaque(usuarioCompleto, valorAtualMeta, LocalDate.now(), meta.getNome());
+        }
+        
+        // Excluir a meta
         metaRepository.delete(meta);
     }
 
+    @Transactional
     public MetaResponse adicionarAporte(UUID metaId, AporteRequest request, Usuario usuario) {
-        Meta meta = metaRepository.findByIdAndUsuario(metaId, usuario)
+        // Validar valor do aporte
+        if (request.valor() == null || request.valor().compareTo(BigDecimal.ZERO) <= 0) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "O valor do aporte deve ser maior que zero");
+        }
+        
+        // Buscar usuário completo do banco
+        Usuario usuarioCompleto = usuarioRepository.findById(usuario.getId())
+                .orElseThrow(() -> new ResponseStatusException(NOT_FOUND, "Usuário não encontrado"));
+        
+        // Buscar meta
+        Meta meta = metaRepository.findByIdAndUsuario(metaId, usuarioCompleto)
                 .orElseThrow(() -> new ResponseStatusException(NOT_FOUND, "Meta não encontrada"));
+        
+        // Criar e salvar aporte
         AporteMeta aporte = new AporteMeta();
         aporte.setValor(request.valor());
         aporte.setMeta(meta);
         aporte.setData(request.data());
         aporteMetaRepository.save(aporte);
+        
+        // Atualizar valor atual da meta
         meta.setValorAtual(meta.getValorAtual().add(request.valor()));
         metaRepository.save(meta);
+        
+        // Subtrair do saldo do usuário
+        usuarioCompleto.setSaldoAtual(usuarioCompleto.getSaldoAtual().subtract(request.valor()));
+        usuarioRepository.save(usuarioCompleto);
+        
+        // Criar transação de despesa automaticamente com categoria "Aporte de Meta"
+        criarTransacaoAporte(usuarioCompleto, request.valor(), request.data(), meta.getNome());
+        
+        return mapToMetaResponse(meta);
+    }
+
+    @Transactional
+    public MetaResponse removerAporte(UUID metaId, AporteRequest request, Usuario usuario ) {
+        // Validar valor da remoção
+        if (request.valor() == null || request.valor().compareTo(BigDecimal.ZERO) <= 0) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "O valor da remoção deve ser maior que zero");
+        }
+        
+        // Buscar usuário completo do banco
+        Usuario usuarioCompleto = usuarioRepository.findById(usuario.getId())
+                .orElseThrow(() -> new ResponseStatusException(NOT_FOUND, "Usuário não encontrado"));
+        
+        // Buscar meta
+        Meta meta = metaRepository.findByIdAndUsuario(metaId, usuarioCompleto)
+                .orElseThrow(() -> new ResponseStatusException(NOT_FOUND, "Meta não encontrada"));
+        
+        // Verificar se a meta tem saldo suficiente para remoção
+        if (meta.getValorAtual().compareTo(request.valor()) < 0) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, 
+                "Valor insuficiente na meta. Valor atual da meta: " + meta.getValorAtual() + 
+                ", valor solicitado para remoção: " + request.valor());
+        }
+        
+        // Criar e salvar aporte negativo (para histórico)
+        AporteMeta aporteReverso = new AporteMeta();
+        aporteReverso.setValor(request.valor().negate()); // Valor negativo
+        aporteReverso.setMeta(meta);
+        aporteReverso.setData(request.data());
+        aporteMetaRepository.save(aporteReverso);
+        
+        // Subtrair do valor atual da meta
+        meta.setValorAtual(meta.getValorAtual().subtract(request.valor()));
+        metaRepository.save(meta);
+        
+        // Adicionar ao saldo do usuário
+        usuarioCompleto.setSaldoAtual(usuarioCompleto.getSaldoAtual().add(request.valor()));
+        usuarioRepository.save(usuarioCompleto);
+        
+        // Criar transação de receita automaticamente com categoria "Saque de Meta"
+        criarTransacaoSaque(usuarioCompleto, request.valor(), request.data(), meta.getNome());
+        
         return mapToMetaResponse(meta);
     }
 
@@ -124,5 +227,71 @@ public class MetaService {
         Meta meta = metaRepository.findByIdAndUsuario(id, usuario)
                 .orElseThrow(() -> new ResponseStatusException(NOT_FOUND, "Meta não encontrada"));
         return mapToMetaResponse(meta);
+    }
+
+    /**
+     * Busca ou cria a categoria "Aporte de Meta" (categoria padrão do sistema)
+     */
+    private Categoria buscarOuCriarCategoriaAporte() {
+        return categoriaRepository.findByNomeAndTipoAndUserIsNull("Aporte de Meta", TipoTransacao.DESPESA)
+                .orElseGet(() -> {
+                    Categoria categoria = new Categoria();
+                    categoria.setNome("Aporte de Meta");
+                    categoria.setTipo(TipoTransacao.DESPESA);
+                    categoria.setUser(null); // Categoria padrão do sistema
+                    return categoriaRepository.save(categoria);
+                });
+    }
+
+    /**
+     * Busca ou cria a categoria "Saque de Meta" (categoria padrão do sistema)
+     */
+    private Categoria buscarOuCriarCategoriaSaque() {
+        return categoriaRepository.findByNomeAndTipoAndUserIsNull("Saque de Meta", TipoTransacao.RECEITA)
+                .orElseGet(() -> {
+                    Categoria categoria = new Categoria();
+                    categoria.setNome("Saque de Meta");
+                    categoria.setTipo(TipoTransacao.RECEITA);
+                    categoria.setUser(null); // Categoria padrão do sistema
+                    return categoriaRepository.save(categoria);
+                });
+    }
+
+    /**
+     * Cria uma transação de despesa para registro de aporte em meta.
+     * Não atualiza o saldo do usuário, pois isso já foi feito no método adicionarAporte.
+     */
+    private void criarTransacaoAporte(Usuario usuario, BigDecimal valor, LocalDate data, String nomeMeta) {
+        Categoria categoria = buscarOuCriarCategoriaAporte();
+        
+        Transacao transacao = new Transacao();
+        transacao.setUser(usuario);
+        transacao.setCategoria(categoria);
+        transacao.setTipo(TipoTransacao.DESPESA);
+        transacao.setValor(valor);
+        // Usa o horário atual de Brasília
+        transacao.setData(LocalDateTime.now(ZoneId.of("America/Sao_Paulo")));
+        transacao.setDescricao("Aporte para meta: " + nomeMeta);
+        
+        transacaoRepository.save(transacao);
+    }
+
+    /**
+     * Cria uma transação de receita para registro de saque de meta.
+     * Não atualiza o saldo do usuário, pois isso já foi feito no método removerAporte ou excluirMeta.
+     */
+    private void criarTransacaoSaque(Usuario usuario, BigDecimal valor, LocalDate data, String nomeMeta) {
+        Categoria categoria = buscarOuCriarCategoriaSaque();
+        
+        Transacao transacao = new Transacao();
+        transacao.setUser(usuario);
+        transacao.setCategoria(categoria);
+        transacao.setTipo(TipoTransacao.RECEITA);
+        transacao.setValor(valor);
+        // Usa o horário atual de Brasília
+        transacao.setData(LocalDateTime.now(ZoneId.of("America/Sao_Paulo")));
+        transacao.setDescricao("Saque da meta: " + nomeMeta);
+        
+        transacaoRepository.save(transacao);
     }
 }

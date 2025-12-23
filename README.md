@@ -2,6 +2,10 @@
 
 Este documento resume o que já foi implementado e como a aplicação está estruturada até o estágio atual, incluindo o fluxo recente de autenticação com JWT.
 
+## 🚀 Deploy no Railway
+
+Para fazer o deploy desta aplicação no Railway (plataforma gratuita), consulte o guia completo em [DEPLOY_RAILWAY.md](./DEPLOY_RAILWAY.md).
+
 ## 📋 Guia de Instalação e Configuração Inicial
 
 Este guia apresenta um passo a passo completo para configurar o ambiente de desenvolvimento e executar o projeto pela primeira vez.

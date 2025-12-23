@@ -113,13 +113,18 @@ public class SecurityConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
-        // Permite origens de localhost e qualquer IP na rede local (192.168.x.x, 10.x.x.x, etc)
+        // Permite origens de localhost, rede local, domínios do Railway e Firebase Hosting
         configuration.setAllowedOriginPatterns(List.of(
             "http://localhost:*",
             "http://127.0.0.1:*",
             "http://192.168.*.*:*",
             "http://10.*.*.*:*",
-            "http://172.16.*.*:*"
+            "http://172.16.*.*:*",
+            "https://*.railway.app",
+            "https://*.up.railway.app",
+            "https://financaplus.web.app",
+            "https://*.web.app",
+            "https://*.firebaseapp.com"
         ));
         configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
         // Adiciona os headers permitidos (incluindo usuarioid que é usado pelo frontend)
