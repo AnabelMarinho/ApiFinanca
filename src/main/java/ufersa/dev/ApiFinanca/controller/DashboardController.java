@@ -34,15 +34,24 @@ public class DashboardController {
             @AuthenticationPrincipal UserDetails userDetails
     ) {
         try {
+            UUID authenticatedId = userDetails != null ? UUID.fromString(userDetails.getUsername()) : null;
             UUID userId;
             if (usuarioId != null) {
+                if (authenticatedId == null) {
+                    throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Usuário não autenticado");
+                }
+                if (!usuarioId.equals(authenticatedId)) {
+                    throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Acesso negado");
+                }
                 userId = usuarioId;
-            } else if (userDetails != null) {
-                userId = UUID.fromString(userDetails.getUsername());
+            } else if (authenticatedId != null) {
+                userId = authenticatedId;
             } else {
                 throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Usuário não autenticado");
             }
             return dashboardService.getDashboard(userId, periodo);
+        } catch (ResponseStatusException ex) {
+            throw ex;
         } catch (IllegalArgumentException ex) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "ID de usuário inválido", ex);
         } catch (RuntimeException ex) {

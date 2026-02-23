@@ -1,7 +1,13 @@
 package ufersa.dev.ApiFinanca.service;
 
 import jakarta.transaction.Transactional;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
+import org.springframework.web.client.RestClientException;
+import org.springframework.web.client.RestTemplate;
 import ufersa.dev.ApiFinanca.dto.AlertaResponse;
 import ufersa.dev.ApiFinanca.model.*;
 import ufersa.dev.ApiFinanca.repository.AlertaRepository;
@@ -10,7 +16,9 @@ import ufersa.dev.ApiFinanca.repository.UsuarioRepository;
 
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
@@ -22,6 +30,8 @@ public class AlertaGerenciamentoService {
 
     private final AlertaRepository alertaRepository;
     private final PreferenciaAlertaRepository preferenciaAlertaRepository;
+    private final RestTemplate restTemplate = new RestTemplate();
+    private static final String ALERTA_WEBHOOK_URL = "https://webhookworkflow.vulpesflow.com/webhook/2a664d02-f65d-4180-be7c-59e437079cf4";
 
     public AlertaGerenciamentoService(
             AlertaRepository alertaRepository,
@@ -119,7 +129,8 @@ public class AlertaGerenciamentoService {
                 alerta.setReferenciaPeriodo(obterPeriodoAtual());
             }
             
-            alertaRepository.save(alerta);
+            Alerta alertaSalvo = alertaRepository.save(alerta);
+            enviarWebhookAlerta(alertaSalvo);
         }
     }
 
@@ -236,6 +247,34 @@ public class AlertaGerenciamentoService {
     public void limparAlertasAntigos() {
         LocalDateTime dataLimite = LocalDateTime.now().minusDays(90);
         alertaRepository.deleteByDataCriacaoBefore(dataLimite);
+    }
+
+    private void enviarWebhookAlerta(Alerta alerta) {
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_JSON);
+
+        Map<String, Object> payload = new HashMap<>();
+        payload.put("id", alerta.getId());
+        payload.put("usuarioId", alerta.getUsuario().getId());
+        payload.put("tipo", alerta.getTipoAlerta());
+        payload.put("mensagem", alerta.getMensagem());
+        payload.put("severidade", alerta.getSeveridade());
+        payload.put("dataCriacao", alerta.getDataCriacao());
+        payload.put("visto", alerta.getVisto());
+        payload.put("metaId", alerta.getMetaId());
+        payload.put("categoriaId", alerta.getCategoriaId());
+        payload.put("referenciaPeriodo", alerta.getReferenciaPeriodo());
+
+        HttpEntity<Map<String, Object>> entity = new HttpEntity<>(payload, headers);
+
+        try {
+            ResponseEntity<Void> response = restTemplate.postForEntity(ALERTA_WEBHOOK_URL, entity, Void.class);
+            if (!response.getStatusCode().is2xxSuccessful()) {
+                return;
+            }
+        } catch (RestClientException ex) {
+            return;
+        }
     }
 }
 

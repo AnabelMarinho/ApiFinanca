@@ -15,6 +15,9 @@ import ufersa.dev.ApiFinanca.repository.UsuarioRepository;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDate;
+import java.time.YearMonth;
+import java.time.format.DateTimeFormatter;
+import java.time.temporal.ChronoUnit;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -63,6 +66,8 @@ public class DashboardService {
 
         // Saldo atual sempre é o mesmo, independente do período
         BigDecimal saldoAtual = user.getSaldoAtual() != null ? user.getSaldoAtual() : BigDecimal.ZERO;
+        BigDecimal economia = totalReceitas.subtract(totalDespesas);
+        BigDecimal projecao = calcularProjecao(periodo, inicio, fim, economia, saldoAtual);
 
         // Busca transações do período
         List<Transacao> transacoesPeriodo;
@@ -110,6 +115,8 @@ public class DashboardService {
                 })
                 .toList();
 
+        List<DashboardResponse.TendenciaDashboard> tendencia = calcularTendencia(transacoesPeriodo, inicio, fim);
+
         // Busca metas do período
         List<Meta> todasMetas = metaRepository.findByUsuarioId(userId);
         List<MetaDashboard> metas = todasMetas.stream()
@@ -142,13 +149,22 @@ public class DashboardService {
                 })
                 .toList();
 
+        DashboardResponse.InsightsDashboard insights = new DashboardResponse.InsightsDashboard();
+        insights.setMaiorGastoPeriodo(calcularMaiorGastoPeriodo(gastosPorCategoria));
+        insights.setCategoriaMaiorCrescimento(calcularCategoriaMaiorCrescimento(periodo, user, inicio, fim, despesasPeriodo));
+        insights.setMetaMaisProximaDeConcluir(calcularMetaMaisProxima(metas));
+
         DashboardResponse response = new DashboardResponse();
         response.setSaldoAtual(saldoAtual);
         response.setTotalReceitas(totalReceitas);
         response.setTotalDespesas(totalDespesas);
+        response.setEconomia(economia);
+        response.setProjecao(projecao);
+        response.setTendencia(tendencia);
         response.setTransacoesRecentes(transacoesRecentes);
         response.setGastosPorCategoria(gastosPorCategoria);
         response.setMetas(metas);
+        response.setInsights(insights);
 
         return response;
     }
@@ -202,5 +218,172 @@ public class DashboardService {
         }
         return valor.multiply(new BigDecimal("100"))
                 .divide(total, 2, RoundingMode.HALF_UP);
+    }
+
+    private BigDecimal calcularProjecao(PeriodoDashboard periodo, LocalDate inicio, LocalDate fim, BigDecimal economia, BigDecimal saldoAtual) {
+        if (periodo != PeriodoDashboard.MES_ATUAL && periodo != PeriodoDashboard.ULTIMOS_3_MESES) {
+            return saldoAtual;
+        }
+        if (inicio == null || fim == null) {
+            return saldoAtual;
+        }
+        if (economia == null || economia.compareTo(BigDecimal.ZERO) == 0) {
+            return saldoAtual;
+        }
+        long diasDecorridos = ChronoUnit.DAYS.between(inicio, LocalDate.now()) + 1;
+        long totalDias = ChronoUnit.DAYS.between(inicio, fim) + 1;
+        if (diasDecorridos <= 0 || totalDias <= 0) {
+            return saldoAtual;
+        }
+        BigDecimal mediaDiaria = economia.divide(BigDecimal.valueOf(diasDecorridos), 6, RoundingMode.HALF_UP);
+        return mediaDiaria.multiply(BigDecimal.valueOf(totalDias)).setScale(2, RoundingMode.HALF_UP);
+    }
+
+    private List<DashboardResponse.TendenciaDashboard> calcularTendencia(List<Transacao> transacoesPeriodo, LocalDate inicio, LocalDate fim) {
+        if (transacoesPeriodo.isEmpty() && (inicio == null || fim == null)) {
+            return List.of();
+        }
+
+        LocalDate inicioPeriodo = inicio;
+        LocalDate fimPeriodo = fim;
+
+        if (inicioPeriodo == null || fimPeriodo == null) {
+            Optional<LocalDate> minData = transacoesPeriodo.stream()
+                    .map(t -> t.getData().toLocalDate())
+                    .min(LocalDate::compareTo);
+            Optional<LocalDate> maxData = transacoesPeriodo.stream()
+                    .map(t -> t.getData().toLocalDate())
+                    .max(LocalDate::compareTo);
+
+            if (minData.isEmpty() || maxData.isEmpty()) {
+                return List.of();
+            }
+
+            inicioPeriodo = minData.get();
+            fimPeriodo = maxData.get();
+        }
+
+        Map<YearMonth, BigDecimal> receitasPorMes = new HashMap<>();
+        Map<YearMonth, BigDecimal> despesasPorMes = new HashMap<>();
+
+        for (Transacao transacao : transacoesPeriodo) {
+            YearMonth mes = YearMonth.from(transacao.getData());
+            if (transacao.getTipo() == TipoTransacao.RECEITA) {
+                receitasPorMes.merge(mes, transacao.getValor(), BigDecimal::add);
+            } else if (transacao.getTipo() == TipoTransacao.DESPESA) {
+                despesasPorMes.merge(mes, transacao.getValor(), BigDecimal::add);
+            }
+        }
+
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("MM/yy");
+        List<DashboardResponse.TendenciaDashboard> tendencia = new ArrayList<>();
+        YearMonth atual = YearMonth.from(inicioPeriodo);
+        YearMonth fimMes = YearMonth.from(fimPeriodo);
+
+        while (!atual.isAfter(fimMes)) {
+            DashboardResponse.TendenciaDashboard item = new DashboardResponse.TendenciaDashboard();
+            item.setMes(atual.format(formatter));
+            item.setReceitas(receitasPorMes.getOrDefault(atual, BigDecimal.ZERO));
+            item.setDespesas(despesasPorMes.getOrDefault(atual, BigDecimal.ZERO));
+            tendencia.add(item);
+            atual = atual.plusMonths(1);
+        }
+
+        return tendencia;
+    }
+
+    private DashboardResponse.MaiorGastoPeriodo calcularMaiorGastoPeriodo(List<GastoCategoria> gastosPorCategoria) {
+        DashboardResponse.MaiorGastoPeriodo maiorGasto = new DashboardResponse.MaiorGastoPeriodo();
+        if (gastosPorCategoria == null || gastosPorCategoria.isEmpty()) {
+            maiorGasto.setCategoria("");
+            maiorGasto.setValor(BigDecimal.ZERO);
+            return maiorGasto;
+        }
+
+        GastoCategoria maior = gastosPorCategoria.stream()
+                .max(Comparator.comparing(GastoCategoria::getValor))
+                .orElse(null);
+
+        if (maior == null) {
+            maiorGasto.setCategoria("");
+            maiorGasto.setValor(BigDecimal.ZERO);
+            return maiorGasto;
+        }
+
+        maiorGasto.setCategoria(maior.getCategoria());
+        maiorGasto.setValor(maior.getValor());
+        return maiorGasto;
+    }
+
+    private DashboardResponse.CategoriaMaiorCrescimento calcularCategoriaMaiorCrescimento(
+            PeriodoDashboard periodo,
+            Usuario user,
+            LocalDate inicio,
+            LocalDate fim,
+            List<Transacao> despesasPeriodo
+    ) {
+        DashboardResponse.CategoriaMaiorCrescimento resultado = new DashboardResponse.CategoriaMaiorCrescimento();
+        resultado.setCategoria("");
+        resultado.setPercentualCrescimento(BigDecimal.ZERO);
+
+        if (periodo == PeriodoDashboard.TODA_UTILIZACAO || inicio == null || fim == null) {
+            return resultado;
+        }
+
+        Map<String, BigDecimal> atualPorCategoria = despesasPeriodo.stream()
+                .collect(Collectors.groupingBy(
+                        t -> t.getCategoria().getNome(),
+                        Collectors.reducing(BigDecimal.ZERO, Transacao::getValor, BigDecimal::add)
+                ));
+
+        long totalDias = ChronoUnit.DAYS.between(inicio, fim) + 1;
+        LocalDate fimAnterior = inicio.minusDays(1);
+        LocalDate inicioAnterior = fimAnterior.minusDays(totalDias - 1);
+
+        List<Transacao> despesasPeriodoAnterior = transacaoRepository
+                .findByUserAndTipoAndDataBetween(user, TipoTransacao.DESPESA, inicioAnterior, fimAnterior);
+
+        Map<String, BigDecimal> anteriorPorCategoria = despesasPeriodoAnterior.stream()
+                .collect(Collectors.groupingBy(
+                        t -> t.getCategoria().getNome(),
+                        Collectors.reducing(BigDecimal.ZERO, Transacao::getValor, BigDecimal::add)
+                ));
+
+        BigDecimal maiorPercentual = BigDecimal.ZERO;
+        String categoriaMaior = "";
+
+        for (Map.Entry<String, BigDecimal> entry : atualPorCategoria.entrySet()) {
+            BigDecimal anterior = anteriorPorCategoria.get(entry.getKey());
+            if (anterior == null || anterior.compareTo(BigDecimal.ZERO) == 0) {
+                continue;
+            }
+            BigDecimal crescimento = entry.getValue().subtract(anterior)
+                    .divide(anterior, 6, RoundingMode.HALF_UP)
+                    .multiply(new BigDecimal("100"));
+
+            if (crescimento.compareTo(maiorPercentual) > 0) {
+                maiorPercentual = crescimento;
+                categoriaMaior = entry.getKey();
+            }
+        }
+
+        resultado.setCategoria(categoriaMaior);
+        resultado.setPercentualCrescimento(maiorPercentual.setScale(2, RoundingMode.HALF_UP));
+        return resultado;
+    }
+
+    private DashboardResponse.MetaMaisProximaDeConcluir calcularMetaMaisProxima(List<MetaDashboard> metas) {
+        Optional<MetaDashboard> metaMaisProxima = metas.stream()
+                .filter(meta -> meta.getPorcentagem() != null && meta.getPorcentagem().compareTo(new BigDecimal("100")) < 0)
+                .max(Comparator.comparing(MetaDashboard::getPorcentagem));
+
+        if (metaMaisProxima.isEmpty()) {
+            return null;
+        }
+
+        DashboardResponse.MetaMaisProximaDeConcluir resultado = new DashboardResponse.MetaMaisProximaDeConcluir();
+        resultado.setNome(metaMaisProxima.get().getNome());
+        resultado.setPorcentagem(metaMaisProxima.get().getPorcentagem());
+        return resultado;
     }
 }
