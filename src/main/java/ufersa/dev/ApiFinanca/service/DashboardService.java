@@ -373,8 +373,14 @@ public class DashboardService {
     }
 
     private DashboardResponse.MetaMaisProximaDeConcluir calcularMetaMaisProxima(List<MetaDashboard> metas) {
+        if (metas == null || metas.isEmpty()) {
+            return null;
+        }
+
+        BigDecimal limiteConcluida = new BigDecimal("100");
+
         Optional<MetaDashboard> metaMaisProxima = metas.stream()
-                .filter(meta -> meta.getPorcentagem() != null && meta.getPorcentagem().compareTo(new BigDecimal("100")) < 0)
+                .filter(meta -> meta.getPorcentagem() != null && meta.getPorcentagem().compareTo(limiteConcluida) < 0)
                 .max(Comparator.comparing(MetaDashboard::getPorcentagem));
 
         if (metaMaisProxima.isEmpty()) {
