@@ -1,12 +1,18 @@
 package ufersa.dev.ApiFinanca.service;
 
 import jakarta.transaction.Transactional;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.web.client.RestClientException;
+import org.springframework.web.client.RestTemplate;
 import ufersa.dev.ApiFinanca.dto.UsuarioResponse;
 import ufersa.dev.ApiFinanca.dto.auth.*;
 import ufersa.dev.ApiFinanca.model.RecuperacaoSenha;
@@ -17,6 +23,8 @@ import ufersa.dev.ApiFinanca.security.JwtService;
 import ufersa.dev.ApiFinanca.service.TransacaoRecorrenteService;
 
 import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Random;
 import java.util.UUID;
@@ -29,9 +37,10 @@ public class AuthService {
     private final AuthenticationManager authenticationManager;
     private final JwtService jwtService;
     private final TransacaoRecorrenteService transacaoRecorrenteService;
-    private final EmailService emailService;
     private final RecuperacaoSenhaRepository recuperacaoSenhaRepository;
     private final Random random = new Random();
+    private final RestTemplate restTemplate = new RestTemplate();
+    private static final String RECUPERACAO_WEBHOOK_URL = "https://webhookworkflow.vulpesflow.com/webhook/f70e6e99-1b7f-4120-b9f4-a328fa6e1d8a";
 
     public AuthService(
             UsuarioRepository usuarioRepository,
@@ -39,7 +48,6 @@ public class AuthService {
             AuthenticationManager authenticationManager,
             JwtService jwtService,
             TransacaoRecorrenteService transacaoRecorrenteService,
-            EmailService emailService,
             RecuperacaoSenhaRepository recuperacaoSenhaRepository
     ) {
         this.usuarioRepository = usuarioRepository;
@@ -47,7 +55,6 @@ public class AuthService {
         this.authenticationManager = authenticationManager;
         this.jwtService = jwtService;
         this.transacaoRecorrenteService = transacaoRecorrenteService;
-        this.emailService = emailService;
         this.recuperacaoSenhaRepository = recuperacaoSenhaRepository;
     }
 
@@ -170,26 +177,29 @@ public class AuthService {
         RecuperacaoSenha recuperacaoSenha = new RecuperacaoSenha(request.getEmail(), codigo);
         recuperacaoSenhaRepository.save(recuperacaoSenha);
         
-        // Envia email apenas se o usuário existir
         if (usuarioOpt.isPresent()) {
-            String mensagem = String.format(
-                "Olá,\n\n" +
-                "Recebemos uma solicitação de recuperação de senha para sua conta.\n\n" +
-                "Seu código de recuperação é: %s\n\n" +
-                "Este código expira em 5 minutos.\n\n" +
-                "Se você não solicitou esta recuperação de senha, pode ignorar este email com segurança.\n\n" +
-                "Atenciosamente,\n" +
-                "Equipe Finança+",
-                codigo
+            Usuario usuario = usuarioOpt.get();
+            String dataExpiracao = recuperacaoSenha.getDataExpiracao().format(DateTimeFormatter.ISO_LOCAL_DATE_TIME);
+            Map<String, Object> payload = Map.of(
+                    "email", request.getEmail(),
+                    "nomeUsuario", usuario.getNome(),
+                    "codigo", codigo,
+                    "dataExpiracao", dataExpiracao
             );
-            
-            emailService.enviarEmail(
-                request.getEmail(),
-                "Recuperação de senha",
-                mensagem
-            );
+
+            HttpHeaders headers = new HttpHeaders();
+            headers.setContentType(MediaType.APPLICATION_JSON);
+            HttpEntity<Map<String, Object>> entity = new HttpEntity<>(payload, headers);
+
+            try {
+                ResponseEntity<Void> response = restTemplate.postForEntity(RECUPERACAO_WEBHOOK_URL, entity, Void.class);
+                if (!response.getStatusCode().is2xxSuccessful()) {
+                    throw new RuntimeException("Falha ao enviar webhook de recuperação de senha.");
+                }
+            } catch (RestClientException ex) {
+                throw new RuntimeException("Falha ao enviar webhook de recuperação de senha.");
+            }
         }
-        // Se o email não existir, não envia nada (por segurança, não revela se o email existe)
     }
 
     public ValidarCodigoResponse validarCodigoRecuperacao(ValidarCodigoRequest request) {
