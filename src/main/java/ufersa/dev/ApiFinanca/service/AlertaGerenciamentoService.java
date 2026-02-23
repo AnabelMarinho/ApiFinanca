@@ -31,7 +31,7 @@ public class AlertaGerenciamentoService {
     private final AlertaRepository alertaRepository;
     private final PreferenciaAlertaRepository preferenciaAlertaRepository;
     private final RestTemplate restTemplate = new RestTemplate();
-    private static final String ALERTA_WEBHOOK_URL = "https://webhookworkflow.vulpesflow.com/webhook/2a664d02-f65d-4180-be7c-59e437079cf4";
+    private static final String ALERTA_WEBHOOK_URL = "https://webhookworkflow.vulpesflow.com/webhook/0b0e0c4c-0023-4283-b9bd-065652767bdc";
 
     public AlertaGerenciamentoService(
             AlertaRepository alertaRepository,
