@@ -1,6 +1,9 @@
 package ufersa.dev.ApiFinanca.repository;
 
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 import ufersa.dev.ApiFinanca.model.Categoria;
 import ufersa.dev.ApiFinanca.model.TipoTransacao;
@@ -42,6 +45,12 @@ public interface TransacaoRecorrenteRepository extends JpaRepository<TransacaoRe
 
     // Buscar todas as transações recorrentes ativas por dia de recorrência (para job futuro)
     List<TransacaoRecorrente> findByAtivaTrueAndDiaRecorrencia(int diaRecorrencia);
+
+    @Modifying(clearAutomatically = true, flushAutomatically = true)
+    @Query("UPDATE TransacaoRecorrente t SET t.categoria = :novaCategoria WHERE t.categoria = :categoria AND t.tipo = :tipo")
+    void atualizarCategoriaPorTipo(@Param("categoria") Categoria categoria,
+                                   @Param("novaCategoria") Categoria novaCategoria,
+                                   @Param("tipo") TipoTransacao tipo);
 
 }
 

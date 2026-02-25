@@ -1,12 +1,15 @@
 package ufersa.dev.ApiFinanca.service;
 
 import jakarta.persistence.EntityNotFoundException;
+import jakarta.transaction.Transactional;
 import org.springframework.stereotype.Service;
 import ufersa.dev.ApiFinanca.dto.CategoriaRequest;
 import ufersa.dev.ApiFinanca.model.Categoria;
 import ufersa.dev.ApiFinanca.model.TipoTransacao;
 import ufersa.dev.ApiFinanca.model.Usuario;
 import ufersa.dev.ApiFinanca.repository.CategoriaRepository;
+import ufersa.dev.ApiFinanca.repository.TransacaoRecorrenteRepository;
+import ufersa.dev.ApiFinanca.repository.TransacaoRepository;
 import ufersa.dev.ApiFinanca.repository.UsuarioRepository;
 
 import java.util.List;
@@ -18,10 +21,19 @@ public class CategoriaService {
 
     private final CategoriaRepository categoriaRepository;
     private final UsuarioRepository usuarioRepository;
+    private final TransacaoRepository transacaoRepository;
+    private final TransacaoRecorrenteRepository transacaoRecorrenteRepository;
 
-    public CategoriaService(CategoriaRepository categoriaRepository, UsuarioRepository usuarioRepository) {
+    public CategoriaService(
+            CategoriaRepository categoriaRepository,
+            UsuarioRepository usuarioRepository,
+            TransacaoRepository transacaoRepository,
+            TransacaoRecorrenteRepository transacaoRecorrenteRepository
+    ) {
         this.categoriaRepository = categoriaRepository;
         this.usuarioRepository = usuarioRepository;
+        this.transacaoRepository = transacaoRepository;
+        this.transacaoRecorrenteRepository = transacaoRecorrenteRepository;
     }
 
     public List<Categoria> getAll() {
@@ -45,11 +57,22 @@ public class CategoriaService {
         return categoriaRepository.save(categoria);
     }
 
+    @Transactional
     public void delete(UUID id) {
-        if (!categoriaRepository.existsById(id)) {
-            throw new EntityNotFoundException("Categoria não encontrada com o ID informado.");
+        Categoria categoria = categoriaRepository.findById(id)
+                .orElseThrow(() -> new EntityNotFoundException("Categoria não encontrada com o ID informado."));
+        if (categoria.getUser() == null) {
+            throw new IllegalArgumentException("Não é permitido excluir categoria padrão.");
         }
-        categoriaRepository.deleteById(id);
+
+        Categoria categoriaPadraoReceita = obterOuCriarCategoriaOutros(TipoTransacao.RECEITA);
+        Categoria categoriaPadraoDespesa = obterOuCriarCategoriaOutros(TipoTransacao.DESPESA);
+
+        transacaoRepository.atualizarCategoriaPorTipo(categoria, categoriaPadraoReceita, TipoTransacao.RECEITA);
+        transacaoRepository.atualizarCategoriaPorTipo(categoria, categoriaPadraoDespesa, TipoTransacao.DESPESA);
+        transacaoRecorrenteRepository.atualizarCategoriaPorTipo(categoria, categoriaPadraoReceita, TipoTransacao.RECEITA);
+        transacaoRecorrenteRepository.atualizarCategoriaPorTipo(categoria, categoriaPadraoDespesa, TipoTransacao.DESPESA);
+        categoriaRepository.delete(categoria);
     }
 
     public List<Categoria> getPadroes() {
@@ -80,6 +103,17 @@ public class CategoriaService {
 
     public Optional<Categoria> getByNomeTipoEUsuario(String nome, TipoTransacao tipo, Usuario usuario) {
         return categoriaRepository.findByNomeAndTipoAndUser(nome, tipo, usuario);
+    }
+
+    private Categoria obterOuCriarCategoriaOutros(TipoTransacao tipo) {
+        return categoriaRepository.findByNomeAndTipoAndUserIsNull("Outros", tipo)
+                .orElseGet(() -> {
+                    Categoria novaCategoria = new Categoria();
+                    novaCategoria.setNome("Outros");
+                    novaCategoria.setTipo(tipo);
+                    novaCategoria.setUser(null);
+                    return categoriaRepository.save(novaCategoria);
+                });
     }
 
     private void applyRequestToEntity(CategoriaRequest request, Categoria categoria) {

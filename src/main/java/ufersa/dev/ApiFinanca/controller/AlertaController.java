@@ -189,5 +189,23 @@ public class AlertaController {
                     "Erro ao verificar alertas: " + ex.getMessage(), ex);
         }
     }
+
+    @PostMapping("/manual")
+    @Operation(
+            summary = "Criar alerta manual para teste",
+            description = "Cria um alerta padrão de teste para o usuário informado no header",
+            security = @SecurityRequirement(name = "bearer-jwt")
+    )
+    public AlertaResponse criarAlertaManual(
+            @RequestHeader("userId") UUID userId
+    ) {
+        try {
+            return alertaGerenciamentoService.criarAlertaManual(userId);
+        } catch (IllegalArgumentException ex) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, ex.getMessage(), ex);
+        } catch (RuntimeException ex) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, ex.getMessage(), ex);
+        }
+    }
 }
 

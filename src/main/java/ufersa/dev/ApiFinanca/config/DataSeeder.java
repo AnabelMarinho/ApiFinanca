@@ -35,6 +35,7 @@ public class DataSeeder implements CommandLineRunner {
         adicionarSeNaoExiste(categoriasPadrao, "Educação", TipoTransacao.DESPESA);
         adicionarSeNaoExiste(categoriasPadrao, "Vestuário", TipoTransacao.DESPESA);
         adicionarSeNaoExiste(categoriasPadrao, "Contas e Serviços", TipoTransacao.DESPESA);
+        adicionarSeNaoExiste(categoriasPadrao, "Outros", TipoTransacao.DESPESA);
 
         // Categorias de RECEITA
         adicionarSeNaoExiste(categoriasPadrao, "Salário", TipoTransacao.RECEITA);

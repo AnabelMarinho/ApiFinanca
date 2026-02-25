@@ -63,6 +63,8 @@ public class CategoriaController {
     public void delete(@PathVariable UUID id) {
         try {
             categoriaService.delete(id);
+        } catch (IllegalArgumentException ex) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, ex.getMessage(), ex);
         } catch (EntityNotFoundException ex) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, ex.getMessage(), ex);
         }

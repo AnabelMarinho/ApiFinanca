@@ -86,5 +86,11 @@ public interface TransacaoRepository extends JpaRepository<Transacao, UUID> {
                                    @Param("descricao") String descricao,
                                    @Param("data") LocalDate data);
 
+    @Modifying(clearAutomatically = true, flushAutomatically = true)
+    @Query("UPDATE Transacao t SET t.categoria = :novaCategoria WHERE t.categoria = :categoria AND t.tipo = :tipo")
+    void atualizarCategoriaPorTipo(@Param("categoria") Categoria categoria,
+                                   @Param("novaCategoria") Categoria novaCategoria,
+                                   @Param("tipo") TipoTransacao tipo);
+
 }
 

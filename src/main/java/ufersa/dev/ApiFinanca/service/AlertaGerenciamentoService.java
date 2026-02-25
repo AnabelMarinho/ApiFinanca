@@ -30,15 +30,18 @@ public class AlertaGerenciamentoService {
 
     private final AlertaRepository alertaRepository;
     private final PreferenciaAlertaRepository preferenciaAlertaRepository;
+    private final UsuarioRepository usuarioRepository;
     private final RestTemplate restTemplate = new RestTemplate();
-    private static final String ALERTA_WEBHOOK_URL = "https://webhookworkflow.vulpesflow.com/webhook/0b0e0c4c-0023-4283-b9bd-065652767bdc";
+    private static final String ALERTA_WEBHOOK_URL = "https://workflow.vulpesflow.com/webhook-test/0b0e0c4c-0023-4283-b9bd-065652767bdc";
 
     public AlertaGerenciamentoService(
             AlertaRepository alertaRepository,
-            PreferenciaAlertaRepository preferenciaAlertaRepository
+            PreferenciaAlertaRepository preferenciaAlertaRepository,
+            UsuarioRepository usuarioRepository
     ) {
         this.alertaRepository = alertaRepository;
         this.preferenciaAlertaRepository = preferenciaAlertaRepository;
+        this.usuarioRepository = usuarioRepository;
     }
 
     /**
@@ -132,6 +135,17 @@ public class AlertaGerenciamentoService {
             Alerta alertaSalvo = alertaRepository.save(alerta);
             enviarWebhookAlerta(alertaSalvo);
         }
+    }
+
+    @Transactional
+    public AlertaResponse criarAlertaManual(UUID usuarioId) {
+        Usuario usuario = usuarioRepository.findById(usuarioId)
+                .orElseThrow(() -> new IllegalArgumentException("Usuário não encontrado"));
+
+        Alerta alerta = new Alerta(usuario, TipoAlerta.GASTO_ACIMA_MEDIA, "Alerta manual de teste", SeveridadeAlerta.MEDIA);
+        Alerta alertaSalvo = alertaRepository.save(alerta);
+        enviarWebhookAlerta(alertaSalvo);
+        return AlertaResponse.fromEntity(alertaSalvo);
     }
 
     /**
@@ -256,6 +270,7 @@ public class AlertaGerenciamentoService {
         Map<String, Object> payload = new HashMap<>();
         payload.put("id", alerta.getId());
         payload.put("usuarioId", alerta.getUsuario().getId());
+        payload.put("email", alerta.getUsuario().getEmail());
         payload.put("tipo", alerta.getTipoAlerta());
         payload.put("mensagem", alerta.getMensagem());
         payload.put("severidade", alerta.getSeveridade());
